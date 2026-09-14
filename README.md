@@ -3,7 +3,7 @@
 > **Xếp gạch – phá hàng – phá kỷ lục!**
 > Tựa game tuổi thơ quay trở lại với giao diện gọn gàng, dễ chơi. Chỉ cần vài phút là bạn sẽ bị cuốn vào đó... và không muốn dừng lại. 😎
 
-Tetris_UIT là đồ án môn học nhỏ của một nhóm sinh viên UIT. Nhóm làm theo kiểu *vibe coding*, vừa code vừa chơi thử, rồi từng người góp thêm một chút cho game hay hơn. Mục tiêu của tụi mình đơn giản thôi: làm ra một game Tetris **chơi vui, mượt, và dễ ghiền**.
+Tetris_UIT là đồ án môn học "Kỹ năng nghề nghiệp" của nhóm Hidden Gem ở trường UIT. Nhóm làm theo kiểu *vibe coding*, vừa code vừa chơi thử, rồi từng người góp thêm một chút cho game hay hơn. Mục tiêu của tụi mình đơn giản thôi: làm ra một game Tetris **chơi vui, mượt, và dễ ghiền**.
 
 ---
 
