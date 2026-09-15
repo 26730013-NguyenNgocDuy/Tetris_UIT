@@ -18,6 +18,7 @@ bool Board::collides(const Tetromino& piece) const {
     std::array<Point, 4> cells = piece.cells();
     for (int i = 0; i < 4; ++i) {
         const Point& p = cells[i];
+        // Kiem tra xem o nay co nam trong ban do khong
         if (p.x < 0 || p.x >= WIDTH) return true;   // cham tuong trai / phai
         if (p.y >= HEIGHT)           return true;   // cham day
         if (p.y >= 0 && grid_[p.y][p.x] != EMPTY) return true;
