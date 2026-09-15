@@ -1,6 +1,7 @@
 #include <iostream>
 #include <conio.h>
 #include "DropSpeedController.h"
+#include "ColorRenderer.h"
 
 using namespace std;
 #define H 20
@@ -113,11 +114,14 @@ void initBoard()
 }
 void draw()
 {
-    system("cls");
+    ColorRenderer::gotoxy(0, 0);
 
-    for (int i = 0; i < H; i++, cout << endl)
+    for (int i = 0; i < H; i++)
+    {
         for (int j = 0; j < W; j++)
-            cout << board[i][j];
+            ColorRenderer::printCell(board[i][j], true);
+        cout << "\n";
+    }
 }
 void removeLine()
 {
@@ -157,6 +161,7 @@ int countCompletedLines()
 int main()
 {
     srand(time(0));
+    ColorRenderer::setupConsole();
     DropSpeedController speedController;
     x = 5;
     y = 0;
