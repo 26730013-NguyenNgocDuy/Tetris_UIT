@@ -176,6 +176,3 @@ int main()
     }
     return 0;
 }
-Beta 0 / 0 used queries
-
-    1
