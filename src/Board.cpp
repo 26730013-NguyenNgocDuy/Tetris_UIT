@@ -52,7 +52,7 @@ int Board::removeFullLines() {
         }
 
         if (!full) {
-            --r;                                  // hang chua day -> xet hang phia tren
+            --r;
             continue;
         }
 
@@ -66,7 +66,6 @@ int Board::removeFullLines() {
             grid_[0][c] = EMPTY;
 
         ++cleared;
-        // Khong giam r: kiem tra lai chinh hang nay vi hang phia tren vua roi xuong
     }
     return cleared;
 }
