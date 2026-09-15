@@ -1,5 +1,6 @@
 #include <iostream>
 #include <conio.h>
+#include "DropSpeedController.h"
 
 using namespace std;
 #define H 20
@@ -138,9 +139,25 @@ void removeLine()
     }
 }
 
+int countCompletedLines()
+{
+    int count = 0;
+    for (int i = 1; i < H - 1; i++)
+    {
+        int j;
+        for (j = 0; j < W; j++)
+            if (board[i][j] == ' ')
+                break;
+        if (j == W)
+            count++;
+    }
+    return count;
+}
+
 int main()
 {
     srand(time(0));
+    DropSpeedController speedController;
     x = 5;
     y = 0;
     b = rand() % 7;
@@ -165,17 +182,17 @@ int main()
         else
         {
             block2Board();
+            int cleared = countCompletedLines();
             removeLine();
+            if (cleared > 0)
+                speedController.onLinesCleared(cleared);
             x = 5;
             y = 0;
             b = rand() % 7;
         }
         block2Board();
         draw();
-        _sleep(500);
+        _sleep(speedController.getDropInterval());
     }
     return 0;
 }
-Beta 0 / 0 used queries
-
-    1
