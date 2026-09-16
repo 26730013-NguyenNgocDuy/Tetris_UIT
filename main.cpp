@@ -1,5 +1,7 @@
 #include <iostream>
 #include <conio.h>
+#include <cstdlib>
+#include <ctime>
 
 using namespace std;
 #define H 20
@@ -7,43 +9,8 @@ using namespace std;
 char board[H][W] = {};
 
 int x, y, b;
+char cur[4][4];
 char blocks[][4][4] = {
-    {{' ', 'I', ' ', ' '},
-     {' ', 'I', ' ', ' '},
-     {' ', 'I', ' ', ' '},
-     {' ', 'I', ' ', ' '}},
-    {{' ', 'I', ' ', ' '},
-     {' ', 'I', ' ', ' '},
-     {' ', 'I', ' ', ' '},
-     {' ', 'I', ' ', ' '}},
-    {{' ', ' ', ' ', ' '},
-     {' ', 'O', 'O', ' '},
-     {' ', 'O', 'O', ' '},
-     {' ', ' ', ' ', ' '}},
-    {{' ', ' ', ' ', ' '},
-     {' ', 'O', 'O', ' '},
-     {' ', 'O', 'O', ' '},
-     {' ', ' ', ' ', ' '}},
-    {{' ', ' ', ' ', ' '},
-     {' ', 'O', 'O', ' '},
-     {' ', 'O', 'O', ' '},
-     {' ', ' ', ' ', ' '}},
-    {{' ', ' ', ' ', ' '},
-     {' ', 'O', 'O', ' '},
-     {' ', 'O', 'O', ' '},
-     {' ', ' ', ' ', ' '}},
-    {{' ', ' ', ' ', ' '},
-     {' ', 'O', 'O', ' '},
-     {' ', 'O', 'O', ' '},
-     {' ', ' ', ' ', ' '}},
-    {{' ', ' ', ' ', ' '},
-     {' ', 'O', 'O', ' '},
-     {' ', 'O', 'O', ' '},
-     {' ', ' ', ' ', ' '}},
-    {{' ', ' ', ' ', ' '},
-     {' ', 'O', 'O', ' '},
-     {' ', 'O', 'O', ' '},
-     {' ', ' ', ' ', ' '}},
     {{' ', ' ', ' ', ' '},
      {'I', 'I', 'I', 'I'},
      {' ', ' ', ' ', ' '},
@@ -76,29 +43,66 @@ bool canMove(int dx, int dy)
 {
     for (int i = 0; i < 4; i++)
         for (int j = 0; j < 4; j++)
-            if (blocks[b][i][j] != ' ')
+            if (cur[i][j] != ' ')
             {
                 int xt = x + j + dx;
                 int yt = y + i + dy;
-                if (xt < 1 || xt >= W - 1 || yt >= H - 1)
+                if (xt < 1 || xt >= W - 1 || yt < 1 || yt >= H - 1)
                     return false;
                 if (board[yt][xt] != ' ')
                     return false;
             }
     return true;
 }
+void rotate()
+{
+    char old[4][4], tmp[4][4];
+
+    for (int i = 0; i < 4; i++)
+        for (int j = 0; j < 4; j++)
+        {
+            old[i][j] = cur[i][j];
+            tmp[i][j] = cur[3 - j][i];
+        }
+    for (int i = 0; i < 4; i++)
+        for (int j = 0; j < 4; j++)
+            cur[i][j] = tmp[i][j];
+
+    int kick[5] = {0, -1, 1, -2, 2};
+    for (int k = 0; k < 5; k++)
+        if (canMove(kick[k], 0))
+        {
+            x += kick[k];
+            return;
+        }
+
+    for (int i = 0; i < 4; i++)
+        for (int j = 0; j < 4; j++)
+            cur[i][j] = old[i][j];
+}
+
+void spawn()
+{
+    b = rand() % 7;
+    for (int i = 0; i < 4; i++)
+        for (int j = 0; j < 4; j++)
+            cur[i][j] = blocks[b][i][j];
+    x = 5;
+    y = 1;
+}
+
 void block2Board()
 {
     for (int i = 0; i < 4; i++)
         for (int j = 0; j < 4; j++)
-            if (blocks[b][i][j] != ' ')
-                board[y + i][x + j] = blocks[b][i][j];
+            if (cur[i][j] != ' ')
+                board[y + i][x + j] = cur[i][j];
 }
 void boardDelBlock()
 {
     for (int i = 0; i < 4; i++)
         for (int j = 0; j < 4; j++)
-            if (blocks[b][i][j] != ' ')
+            if (cur[i][j] != ' ')
                 board[y + i][x + j] = ' ';
 }
 void initBoard()
@@ -128,9 +132,11 @@ void removeLine()
                 break;
         if (j == W)
         {
-            for (int ii = i; ii > 0; ii--)
-                for (int jj = 0; jj < W; jj++)
+            for (int ii = i; ii > 1; ii--)
+                for (int jj = 1; jj < W - 1; jj++)
                     board[ii][jj] = board[ii - 1][jj];
+            for (int jj = 1; jj < W - 1; jj++)
+                board[1][jj] = ' ';
             i++;
             draw();
             _sleep(200);
@@ -141,10 +147,8 @@ void removeLine()
 int main()
 {
     srand(time(0));
-    x = 5;
-    y = 0;
-    b = rand() % 7;
     initBoard();
+    spawn();
     while (1)
     {
         boardDelBlock();
@@ -155,8 +159,10 @@ int main()
                 x--;
             if (c == 'd' && canMove(1, 0))
                 x++;
-            if (c == 'x' && canMove(0, 1))
+            if (c == 's' && canMove(0, 1))
                 y++;
+            if (c == 'w')
+                rotate();
             if (c == 'q')
                 break;
         }
@@ -166,9 +172,7 @@ int main()
         {
             block2Board();
             removeLine();
-            x = 5;
-            y = 0;
-            b = rand() % 7;
+            spawn();
         }
         block2Board();
         draw();
@@ -176,6 +180,3 @@ int main()
     }
     return 0;
 }
-Beta 0 / 0 used queries
-
-    1
