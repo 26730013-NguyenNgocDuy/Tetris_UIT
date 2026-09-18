@@ -140,6 +140,7 @@ void removeLine()
     }
 }
 
+
 int main()
 {
     srand(time(0));
