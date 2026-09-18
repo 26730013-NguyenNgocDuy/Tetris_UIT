@@ -1,5 +1,6 @@
 #include <iostream>
 #include <conio.h>
+#include <windows.h>
 #include "DropSpeedController.h"
 
 using namespace std;
@@ -111,51 +112,57 @@ void initBoard()
             else
                 board[i][j] = ' ';
 }
+const char BLOCK_CHAR = (char)219;
+const char BORDER_CHAR = (char)178;
+
+void drawCell(char c)
+{
+    if (c == '#')
+        cout << BORDER_CHAR << BORDER_CHAR;
+    else if (c == ' ')
+        cout << "  ";
+    else
+        cout << BLOCK_CHAR << BLOCK_CHAR;
+}
 void draw()
 {
     system("cls");
 
     for (int i = 0; i < H; i++, cout << endl)
         for (int j = 0; j < W; j++)
-            cout << board[i][j];
+            drawCell(board[i][j]);
 }
-void removeLine()
+int removeLine()
 {
+    int clearedCount = 0;
     int i, j;
     for (i = H - 2; i > 0; i--)
     {
-        for (j = 0; j < W; j++)
+        for (j = 1; j < W - 1; j++)
             if (board[i][j] == ' ')
                 break;
-        if (j == W)
+        if (j == W - 1)
         {
-            for (int ii = i; ii > 0; ii--)
-                for (int jj = 0; jj < W; jj++)
+            for (int ii = i; ii > 1; ii--)
+                for (int jj = 1; jj < W - 1; jj++)
                     board[ii][jj] = board[ii - 1][jj];
+            for (int jj = 1; jj < W - 1; jj++)
+                board[1][jj] = ' ';
             i++;
+            clearedCount++;
             draw();
-            _sleep(200);
+            Sleep(200);
         }
     }
+    return clearedCount;
 }
 
-int countCompletedLines()
-{
-    int count = 0;
-    for (int i = 1; i < H - 1; i++)
-    {
-        int j;
-        for (j = 0; j < W; j++)
-            if (board[i][j] == ' ')
-                break;
-        if (j == W)
-            count++;
-    }
-    return count;
-}
 
 int main()
 {
+    UINT oldCodePage = GetConsoleOutputCP();
+    SetConsoleOutputCP(437);
+
     srand(time(0));
     DropSpeedController speedController;
     x = 5;
@@ -182,8 +189,7 @@ int main()
         else
         {
             block2Board();
-            int cleared = countCompletedLines();
-            removeLine();
+            int cleared = removeLine();
             if (cleared > 0)
                 speedController.onLinesCleared(cleared);
             x = 5;
@@ -192,7 +198,8 @@ int main()
         }
         block2Board();
         draw();
-        _sleep(speedController.getDropInterval());
+        Sleep(speedController.getDropInterval());
     }
+    SetConsoleOutputCP(oldCodePage);
     return 0;
 }
