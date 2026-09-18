@@ -1,5 +1,6 @@
 #include <iostream>
 #include <conio.h>
+#include <windows.h>
 
 using namespace std;
 #define H 20
@@ -110,13 +111,25 @@ void initBoard()
             else
                 board[i][j] = ' ';
 }
+const char BLOCK_CHAR = (char)219;
+const char BORDER_CHAR = (char)178;
+
+void drawCell(char c)
+{
+    if (c == '#')
+        cout << BORDER_CHAR << BORDER_CHAR;
+    else if (c == ' ')
+        cout << "  ";
+    else
+        cout << BLOCK_CHAR << BLOCK_CHAR;
+}
 void draw()
 {
     system("cls");
 
     for (int i = 0; i < H; i++, cout << endl)
         for (int j = 0; j < W; j++)
-            cout << board[i][j];
+            drawCell(board[i][j]);
 }
 void removeLine()
 {
@@ -140,6 +153,9 @@ void removeLine()
 
 int main()
 {
+    UINT oldCodePage = GetConsoleOutputCP();
+    SetConsoleOutputCP(437);
+
     srand(time(0));
     x = 5;
     y = 0;
@@ -174,8 +190,6 @@ int main()
         draw();
         _sleep(500);
     }
+    SetConsoleOutputCP(oldCodePage);
     return 0;
 }
-Beta 0 / 0 used queries
-
-    1
