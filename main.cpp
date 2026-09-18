@@ -1,6 +1,7 @@
 #include <iostream>
 #include <conio.h>
 #include <windows.h>
+#include "DropSpeedController.h"
 
 using namespace std;
 #define H 20
@@ -131,8 +132,9 @@ void draw()
         for (int j = 0; j < W; j++)
             drawCell(board[i][j]);
 }
-void removeLine()
+int removeLine()
 {
+    int clearedCount = 0;
     int i, j;
     for (i = H - 2; i > 0; i--)
     {
@@ -147,10 +149,12 @@ void removeLine()
             for (int jj = 1; jj < W - 1; jj++)
                 board[1][jj] = ' ';
             i++;
+            clearedCount++;
             draw();
-            _sleep(200);
+            Sleep(200);
         }
     }
+    return clearedCount;
 }
 
 
@@ -160,6 +164,7 @@ int main()
     SetConsoleOutputCP(437);
 
     srand(time(0));
+    DropSpeedController speedController;
     x = 5;
     y = 0;
     b = rand() % 7;
@@ -184,14 +189,16 @@ int main()
         else
         {
             block2Board();
-            removeLine();
+            int cleared = removeLine();
+            if (cleared > 0)
+                speedController.onLinesCleared(cleared);
             x = 5;
             y = 0;
             b = rand() % 7;
         }
         block2Board();
         draw();
-        _sleep(500);
+        Sleep(speedController.getDropInterval());
     }
     SetConsoleOutputCP(oldCodePage);
     return 0;
