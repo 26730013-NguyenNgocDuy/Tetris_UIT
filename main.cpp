@@ -1,7 +1,8 @@
 #include <iostream>
 #include <conio.h>
-#include <windows.h>
+#include <cstdlib>
 #include <ctime>
+#include <windows.h>
 #include <vector>
 #include <iomanip>
 #include "DropSpeedController.h"
@@ -20,7 +21,7 @@ int holdBlock = -1;
 bool canHold = true;
 int nextQueue[4];
 
-// Định nghĩa 7 loại khối Tetrimino (4x4)
+// Định nghĩa 7 loại khối Tetrimino chuẩn quốc tế (4x4)
 char blocks[7][4][4] = {
     // 0: Khối I
     {{' ', ' ', ' ', ' '},
@@ -101,7 +102,7 @@ void rotate()
         for (int j = 0; j < 4; j++)
             cur[i][j] = tmp[i][j];
 
-    // Wall kick
+    // Wall kick: thử các độ lệch 0, -1, 1, -2, 2
     int kick[5] = {0, -1, 1, -2, 2};
     for (int k = 0; k < 5; k++)
     {
@@ -112,7 +113,7 @@ void rotate()
         }
     }
 
-    // Nếu không xoay được thì khôi phục hình dạng cũ
+    // Không thể xoay -> trả lại trạng thái cũ
     for (int i = 0; i < 4; i++)
         for (int j = 0; j < 4; j++)
             cur[i][j] = old[i][j];
@@ -140,10 +141,12 @@ void initBoard()
 {
     for (int i = 0; i < H; i++)
         for (int j = 0; j < W; j++)
+        {
             if (i == 0 || i == H - 1 || j == 0 || j == W - 1)
                 board[i][j] = '#';
             else
                 board[i][j] = ' ';
+        }
 }
 
 int getGhostY()
@@ -164,7 +167,7 @@ void initQueue()
     }
 }
 
-void spawnPiece(int blockId = -1)
+void spawn(int blockId = -1)
 {
     if (blockId == -1)
     {
@@ -197,48 +200,20 @@ void holdPiece()
     if (holdBlock == -1)
     {
         holdBlock = b;
-        spawnPiece(-1);
+        spawn(-1);
     }
     else
     {
         int temp = holdBlock;
         holdBlock = b;
-        spawnPiece(temp);
+        spawn(temp);
     }
-}
-
-int removeLine(void (*drawCallback)())
-{
-    int clearedCount = 0;
-    for (int i = H - 2; i > 0; i--)
-    {
-        int j;
-        for (j = 1; j < W - 1; j++)
-            if (board[i][j] == ' ')
-                break;
-        if (j == W - 1)
-        {
-            clearedCount++;
-            for (int ii = i; ii > 1; ii--)
-                for (int jj = 1; jj < W - 1; jj++)
-                    board[ii][jj] = board[ii - 1][jj];
-            for (int jj = 1; jj < W - 1; jj++)
-                board[1][jj] = ' ';
-            i++;
-            if (drawCallback)
-            {
-                drawCallback();
-                Sleep(120);
-            }
-        }
-    }
-    return clearedCount;
 }
 
 DropSpeedController speedController;
 
 // Hàm vẽ toàn bộ UI chuẩn báo cáo 3.3
-void drawUI()
+void draw()
 {
     ColorRenderer::gotoxy(0, 0);
 
@@ -460,29 +435,65 @@ void drawUI()
     ColorRenderer::resetColor();
 }
 
-void triggerDrawCallback()
+int removeLine()
 {
-    drawUI();
+    int clearedCount = 0;
+
+    for (int i = H - 2; i > 0; i--)
+    {
+        int j;
+        for (j = 1; j < W - 1; j++)
+            if (board[i][j] == ' ')
+                break;
+
+        if (j == W - 1)
+        {
+            clearedCount++;
+
+            // Kéo các dòng phía trên xuống
+            for (int ii = i; ii > 1; ii--)
+                for (int jj = 1; jj < W - 1; jj++)
+                    board[ii][jj] = board[ii - 1][jj];
+
+            // Xóa dòng trên cùng
+            for (int jj = 1; jj < W - 1; jj++)
+                board[1][jj] = ' ';
+
+            // Kiểm tra lại dòng hiện tại
+            i++;
+
+            draw();
+            Sleep(120);
+        }
+    }
+
+    return clearedCount;
 }
 
 int main()
 {
     srand(static_cast<unsigned int>(time(0)));
     ColorRenderer::setupConsole();
+
     initBoard();
     initQueue();
-    spawnPiece(-1);
+    spawn(-1);
 
     while (1)
     {
+        boardDelBlock();
+
         if (kbhit())
         {
             char c = getch();
+
             if (c == 'a' && canMove(-1, 0))
                 x--;
-            else if (c == 'd' && canMove(1, 0))
+
+            if (c == 'd' && canMove(1, 0))
                 x++;
-            else if (c == 's')
+
+            if (c == 's')
             {
                 if (canMove(0, 1))
                 {
@@ -490,15 +501,14 @@ int main()
                     speedController.addDropScore(1);
                 }
             }
-            else if (c == 'w')
-            {
+
+            if (c == 'w')
                 rotate();
-            }
-            else if (c == 'c' || c == 'C')
-            {
+
+            if (c == 'c' || c == 'C')
                 holdPiece();
-            }
-            else if (c == ' ') // Hard drop
+
+            if (c == ' ') // Hard drop
             {
                 int dropDist = 0;
                 while (canMove(0, 1))
@@ -508,10 +518,9 @@ int main()
                 }
                 speedController.addDropScore(dropDist * 2);
             }
-            else if (c == 'q')
-            {
+
+            if (c == 'q')
                 break;
-            }
         }
 
         if (canMove(0, 1))
@@ -520,19 +529,23 @@ int main()
         }
         else
         {
+            // Block đã chạm đáy
             block2Board();
-            int cleared = removeLine(triggerDrawCallback);
-            if (cleared > 0)
-            {
-                speedController.onLinesCleared(cleared);
-            }
 
-            spawnPiece(-1);
+            // Xóa line
+            int cleared = removeLine();
+
+            // Tăng tốc độ nếu có line bị xóa
+            if (cleared > 0)
+                speedController.onLinesCleared(cleared);
+
+            // Spawn block mới
+            spawn(-1);
 
             // Kiểm tra GameOver
             if (!canMove(0, 0))
             {
-                drawUI();
+                draw();
                 ColorRenderer::gotoxy(18, 10);
                 ColorRenderer::setColor(COLOR_RED, COLOR_WHITE);
                 cout << "   GAME OVER!   ";
@@ -541,12 +554,16 @@ int main()
             }
         }
 
-        drawUI();
+        block2Board();
+
+        draw();
+
         Sleep(speedController.getDropInterval());
     }
 
     ColorRenderer::gotoxy(0, 23);
     cout << "\nNhan phim bat ky de thoat...";
     getch();
+
     return 0;
 }
