@@ -78,13 +78,25 @@ Mỗi hàng phá được làm gạch rơi nhanh thêm **30 ms**. Phá 4 hàng m
 
 Chỗ gọi chỉ cầm con trỏ `Blocks *current` và gọi `current->rotate()`, không cần biết đang là khối gì.
 
+### Trạng thái game bằng tính đa hình
+
+`GameState` là lớp cơ sở trừu tượng với ba hàm thuần ảo `handle()`, `update()`, `draw()`:
+
+| Lớp | Làm gì |
+| --- | --- |
+| `PlayingState` | Khối rơi theo nhịp, nhận phím điều khiển |
+| `PausedState` | Khối đứng yên, hiện khung tạm dừng, chờ bấm P |
+| `GameOverState` | Hiện điểm, chờ bấm R để chơi lại hoặc Q để thoát |
+
+`Game` chỉ giữ con trỏ `GameState *state` và gọi `state->update()`, mỗi trạng thái tự chạy đúng việc của nó.
+
 > 💡 Nhớ tắt **Caps Lock** và chuyển bộ gõ sang **tiếng Anh**, không thì game sẽ không nhận phím đâu!
 
 ---
 
 ## 🚀 Cài đặt và chơi ngay
 
-> 🍎 **macOS / Linux**: chạy `./play.sh` (hoặc `g++ -std=c++11 main.cpp Blocks.cpp BlockTypes.cpp Board.cpp Bag7.cpp -o tetris && ./tetris`). `Platform.h` tự thay `<windows.h>`/`<conio.h>` bằng termios và mã màu ANSI.
+> 🍎 **macOS / Linux**: chạy `./play.sh` (hoặc `g++ -std=c++11 main.cpp Blocks.cpp BlockTypes.cpp Board.cpp Bag7.cpp Renderer.cpp Input.cpp Game.cpp GameState.cpp -o tetris && ./tetris`). `Platform.h` tự thay `<windows.h>`/`<conio.h>` bằng termios và mã màu ANSI.
 
 **1. Tải source về**
 
@@ -102,7 +114,7 @@ cd Tetris_UIT
 - **🖥️ Cách 2: Chơi bản C++ Console (Minh chứng môn OOP)**
   - Với **MinGW / g++**:
   ```bash
-  g++ -O2 main.cpp Blocks.cpp BlockTypes.cpp Board.cpp Bag7.cpp -o tetris.exe
+  g++ -O2 main.cpp Blocks.cpp BlockTypes.cpp Board.cpp Bag7.cpp Renderer.cpp Input.cpp Game.cpp GameState.cpp -o tetris.exe
   ./tetris.exe
   ```
   - Hoặc click đúp file **`Play_Game.bat`** để tự động build và chạy ngay trong 1 click!
@@ -141,7 +153,11 @@ g++ -O2 test_speed.cpp -o test_speed.exe
 
 ```
 Tetris_UIT/
-├── main.cpp                # Vòng lặp game, giao diện, điều khiển
+├── main.cpp                # Chỉ tạo đối tượng Game rồi chạy
+├── Game.h / Game.cpp       # Điều khiển ván chơi, sở hữu mọi thành phần bên dưới
+├── GameState.h / .cpp      # Lớp trừu tượng GameState + PlayingState, PausedState, GameOverState
+├── Renderer.h / .cpp       # Vẽ sân chơi, các khung thông tin, khung tạm dừng và thua cuộc
+├── Input.h / Input.cpp     # Đọc phím chữ và phím mũi tên, trả về hành động
 ├── Blocks.h / Blocks.cpp   # Lớp trừu tượng cho một khối: hình dạng, vị trí, hàm xoay ảo
 ├── BlockTypes.h / .cpp     # Bảy lớp con: BlockI, BlockO, BlockT, BlockS, BlockZ, BlockJ, BlockL
 ├── Board.h / Board.cpp     # Sân chơi: lưới, va chạm, đặt khối, xoá hàng
