@@ -74,3 +74,6 @@ Testing/
 
 # Diem cao luu khi choi
 highscore.dat
+
+# Clangd configuration file
+.clangd
