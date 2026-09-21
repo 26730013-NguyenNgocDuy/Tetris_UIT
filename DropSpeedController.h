@@ -19,6 +19,7 @@ private:
     int totalLinesCleared;
     int score;
     int level;
+    int comboStreak;
 
 public:
     /**
@@ -33,7 +34,8 @@ public:
           speedStep(stepMs),
           totalLinesCleared(0),
           score(0),
-          level(1) {}
+          level(1),
+          comboStreak(0) {}
 
     /**
      * @brief Call when one or more lines have been successfully cleared.
@@ -43,8 +45,9 @@ public:
         if (count <= 0) return;
 
         totalLinesCleared += count;
-        
-        // Classic Tetris scoring formula scaled with level
+        comboStreak++;
+
+        // Classic Tetris scoring formula scaled with level + combo bonus
         int baseScore = 0;
         switch (count) {
             case 1: baseScore = 100; break;
@@ -53,16 +56,25 @@ public:
             case 4: baseScore = 800; break; // Tetris!
             default: baseScore = count * 200; break;
         }
-        score += baseScore * level;
+
+        int comboBonus = (comboStreak > 1) ? (comboStreak - 1) * 50 * level : 0;
+        score += (baseScore * level) + comboBonus;
 
         // Level up every 10 lines
         level = 1 + (totalLinesCleared / 10);
 
-        // Accelerate fall speed
+        // Accelerate fall speed based on cleared lines and level
         currentInterval = initialInterval - (totalLinesCleared * speedStep);
         if (currentInterval < minimumInterval) {
             currentInterval = minimumInterval;
         }
+    }
+
+    /**
+     * @brief Reset combo streak when a piece locks without clearing any lines.
+     */
+    void resetCombo() {
+        comboStreak = 0;
     }
 
     /**
@@ -88,11 +100,28 @@ public:
         return level;
     }
 
+    int getComboStreak() const {
+        return comboStreak;
+    }
+
+    int getInitialInterval() const {
+        return initialInterval;
+    }
+
+    int getMinimumInterval() const {
+        return minimumInterval;
+    }
+
+    int getSpeedStep() const {
+        return speedStep;
+    }
+
     void reset() {
         currentInterval = initialInterval;
         totalLinesCleared = 0;
         score = 0;
         level = 1;
+        comboStreak = 0;
     }
 };
 
