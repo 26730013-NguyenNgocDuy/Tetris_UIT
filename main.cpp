@@ -6,6 +6,7 @@
 #include "Platform.h"
 #include "DropSpeedController.h"
 #include "ColorRenderer.h"
+#include "Tetromino.h"
 
 using namespace std;
 
@@ -15,7 +16,8 @@ using namespace std;
 // Bàn cờ chính 20x12 (với 2 cột viền và 10 cột trong sân chơi chuẩn Tetris)
 char board[H][W] = {};
 
-int x, y, b;
+// Khối đang rơi: hình dạng, loại và vị trí đều nằm trong đối tượng này
+Tetromino current;
 int holdBlock = -1;
 bool canHold = true;
 int nextQueue[4];
@@ -59,18 +61,16 @@ char blocks[7][4][4] = {
      {' ', ' ', ' ', ' '}}
 };
 
-char cur[4][4];
-
-bool canMove(int dx, int dy, char piece[4][4], int px, int py)
+bool canMove(int dx, int dy, const Tetromino &piece)
 {
     for (int i = 0; i < 4; i++)
     {
         for (int j = 0; j < 4; j++)
         {
-            if (piece[i][j] != ' ')
+            if (piece.isFilled(i, j))
             {
-                int xt = px + j + dx;
-                int yt = py + i + dy;
+                int xt = piece.getX() + j + dx;
+                int yt = piece.getY() + i + dy;
                 if (xt < 1 || xt >= W - 1 || yt >= H - 1)
                     return false;
                 if (yt >= 0 && board[yt][xt] != ' ')
@@ -83,57 +83,49 @@ bool canMove(int dx, int dy, char piece[4][4], int px, int py)
 
 bool canMove(int dx, int dy)
 {
-    return canMove(dx, dy, cur, x, y);
+    return canMove(dx, dy, current);
 }
 
 void rotate()
 {
-    char old[4][4], tmp[4][4];
-    for (int i = 0; i < 4; i++)
-    {
-        for (int j = 0; j < 4; j++)
-        {
-            old[i][j] = cur[i][j];
-            tmp[i][j] = cur[3 - j][i];
-        }
-    }
-    for (int i = 0; i < 4; i++)
-        for (int j = 0; j < 4; j++)
-            cur[i][j] = tmp[i][j];
+    // Xoay trên một bản sao, chỉ nhận khi bản sao đặt vừa vào bàn cờ
+    Tetromino turned = current.rotated();
 
     // Wall kick: thử các độ lệch 0, -1, 1, -2, 2
     int kick[5] = {0, -1, 1, -2, 2};
     for (int k = 0; k < 5; k++)
     {
-        if (canMove(kick[k], 0))
+        if (canMove(kick[k], 0, turned))
         {
-            x += kick[k];
+            turned.move(kick[k], 0);
+            current = turned;
             return;
         }
     }
-
-    // Không thể xoay -> trả lại trạng thái cũ
-    for (int i = 0; i < 4; i++)
-        for (int j = 0; j < 4; j++)
-            cur[i][j] = old[i][j];
 }
 
 void block2Board()
 {
     for (int i = 0; i < 4; i++)
         for (int j = 0; j < 4; j++)
-            if (cur[i][j] != ' ')
-                if (y + i >= 0 && y + i < H && x + j >= 0 && x + j < W)
-                    board[y + i][x + j] = cur[i][j];
+            if (current.isFilled(i, j))
+            {
+                int r = current.getY() + i, c = current.getX() + j;
+                if (r >= 0 && r < H && c >= 0 && c < W)
+                    board[r][c] = current.at(i, j);
+            }
 }
 
 void boardDelBlock()
 {
     for (int i = 0; i < 4; i++)
         for (int j = 0; j < 4; j++)
-            if (cur[i][j] != ' ')
-                if (y + i >= 0 && y + i < H && x + j >= 0 && x + j < W)
-                    board[y + i][x + j] = ' ';
+            if (current.isFilled(i, j))
+            {
+                int r = current.getY() + i, c = current.getX() + j;
+                if (r >= 0 && r < H && c >= 0 && c < W)
+                    board[r][c] = ' ';
+            }
 }
 
 void initBoard()
@@ -150,8 +142,8 @@ void initBoard()
 
 int getGhostY()
 {
-    int gy = y;
-    while (canMove(0, gy - y + 1))
+    int gy = current.getY();
+    while (canMove(0, gy - current.getY() + 1))
     {
         gy++;
     }
@@ -168,9 +160,10 @@ void initQueue()
 
 void spawn(int blockId = -1)
 {
+    int type;
     if (blockId == -1)
     {
-        b = nextQueue[0];
+        type = nextQueue[0];
         for (int i = 0; i < 3; i++)
         {
             nextQueue[i] = nextQueue[i + 1];
@@ -179,15 +172,10 @@ void spawn(int blockId = -1)
     }
     else
     {
-        b = blockId;
+        type = blockId;
     }
 
-    for (int i = 0; i < 4; i++)
-        for (int j = 0; j < 4; j++)
-            cur[i][j] = blocks[b][i][j];
-
-    x = 4;
-    y = 0;
+    current = Tetromino(type, 4, 0);
     canHold = true;
 }
 
@@ -198,13 +186,13 @@ void holdPiece()
     boardDelBlock();
     if (holdBlock == -1)
     {
-        holdBlock = b;
+        holdBlock = current.getType();
         spawn(-1);
     }
     else
     {
         int temp = holdBlock;
-        holdBlock = b;
+        holdBlock = current.getType();
         spawn(temp);
     }
 }
@@ -225,16 +213,17 @@ void draw()
             displayBoard[r][c] = board[r][c];
 
     // Vẽ ghost piece (nếu chưa chạm đất)
-    if (ghostY > y)
+    if (ghostY > current.getY())
     {
         for (int i = 0; i < 4; i++)
         {
             for (int j = 0; j < 4; j++)
             {
-                if (cur[i][j] != ' ' && ghostY + i < H - 1 && x + j > 0 && x + j < W - 1)
+                int c = current.getX() + j;
+                if (current.isFilled(i, j) && ghostY + i < H - 1 && c > 0 && c < W - 1)
                 {
-                    if (displayBoard[ghostY + i][x + j] == ' ')
-                        displayBoard[ghostY + i][x + j] = '+';
+                    if (displayBoard[ghostY + i][c] == ' ')
+                        displayBoard[ghostY + i][c] = '+';
                 }
             }
         }
@@ -245,9 +234,10 @@ void draw()
     {
         for (int j = 0; j < 4; j++)
         {
-            if (cur[i][j] != ' ' && y + i >= 0 && y + i < H && x + j >= 0 && x + j < W)
+            int r = current.getY() + i, c = current.getX() + j;
+            if (current.isFilled(i, j) && r >= 0 && r < H && c >= 0 && c < W)
             {
-                displayBoard[y + i][x + j] = cur[i][j];
+                displayBoard[r][c] = current.at(i, j);
             }
         }
     }
@@ -512,16 +502,16 @@ int main()
             char c = getch();
 
             if (c == 'a' && canMove(-1, 0))
-                x--;
+                current.move(-1, 0);
 
             if (c == 'd' && canMove(1, 0))
-                x++;
+                current.move(1, 0);
 
             if (c == 's')
             {
                 if (canMove(0, 1))
                 {
-                    y++;
+                    current.move(0, 1);
                     speedController.addDropScore(1);
                 }
             }
@@ -537,7 +527,7 @@ int main()
                 int dropDist = 0;
                 while (canMove(0, 1))
                 {
-                    y++;
+                    current.move(0, 1);
                     dropDist++;
                 }
                 speedController.addDropScore(dropDist * 2);
@@ -549,7 +539,7 @@ int main()
 
         if (canMove(0, 1))
         {
-            y++;
+            current.move(0, 1);
         }
         else
         {
