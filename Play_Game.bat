@@ -1,13 +1,20 @@
 @echo off
 chcp 65001 > nul
 title [UIT - SS004] Game Tetris Console - Nhom Hidden Gem
+rem Chay tu thu muc chua file .bat, du bam dup hay goi tu noi khac
+cd /d "%~dp0"
+
+rem Ma nguon nam trong src/ chia theo vai tro: core (luat choi), game (dieu khien), ui (hien thi)
+set INC=-Isrc/core -Isrc/game -Isrc/ui
+set SRC=src/*.cpp src/core/*.cpp src/game/*.cpp src/ui/*.cpp
+
 echo ========================================================
 echo   TRƯỜNG ĐH CÔNG NGHỆ THÔNG TIN - ĐHQG TP.HCM (UIT)
 echo   ĐỒ ÁN MÔN HỌC: KỸ NĂNG NGHỀ NGHIỆP (SS004) - NHÓM HIDDEN GEM
 echo ========================================================
 if "%1"=="test" (
     echo Đang biên dịch và chạy Unit Test cho DropSpeedController...
-    g++ test_speed.cpp -o test_speed.exe -O2
+    g++ %INC% tests/test_speed.cpp -o test_speed.exe -O2
     if %ERRORLEVEL% NEQ 0 (
         echo [LỖI] Biên dịch test thất bại!
         pause
@@ -19,10 +26,8 @@ if "%1"=="test" (
 )
 
 echo Đang biên dịch Tetris C++...
-rem Danh sach file nguon cua game. Them file .cpp moi vao day khi tach lop.
-rem Khong dung *.cpp vi test_speed.cpp co ham main() rieng.
-set SRC=main.cpp Blocks.cpp BlockTypes.cpp Board.cpp Bag7.cpp Renderer.cpp Input.cpp Game.cpp GameState.cpp
-g++ %SRC% -o Tetris.exe -O2
+rem Them lop moi chi can dat file .cpp vao dung thu muc, khong phai sua script nay
+g++ %INC% %SRC% -o Tetris.exe -O2
 if %ERRORLEVEL% NEQ 0 (
     echo [LỖI] Không thể biên dịch mã nguồn C++. Vui lòng kiểm tra lại g++ (MinGW).
     pause
