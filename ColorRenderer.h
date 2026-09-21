@@ -3,9 +3,10 @@
 
 #include <iostream>
 #include <windows.h>
+#include <string>
 
 /**
- * @brief Bảng màu Console chuẩn Windows từ repo cũ TetrisGame (UIT - SS004)
+ * @brief Bảng màu Console chuẩn Windows
  */
 enum ConsoleColor {
     COLOR_BLACK         = 0,
@@ -27,11 +28,19 @@ enum ConsoleColor {
 };
 
 /**
- * @brief Class OOP ColorRenderer - Quản lý màu sắc và render mượt mà (Flicker-Free)
+ * @brief Class OOP ColorRenderer - Quản lý màu sắc và render giao diện chuẩn hình mẫu báo cáo 3.3
+ * 
+ * Thành phần giao diện:
+ * 1: Khung bàn chơi chính (10x20 tiêu chuẩn)
+ * 2: Khối gạch đang rơi (Active Tetrimino)
+ * 3: Ghost Piece (Bóng khối rơi dự đoán vị trí tiếp đất)
+ * 4: Khung "GIỮ" (Hold Piece)
+ * 5: Khung "TIẾP THEO" (Next Pieces)
+ * 6: Khung thông số "ĐIỂM", "CẤP ĐỘ", "SỐ HÀNG"
  */
 class ColorRenderer {
 public:
-    static void setColor(int textColor, int bgColor = 0) {
+    static void setColor(int textColor, int bgColor = COLOR_BLACK) {
         SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), (bgColor << 4) | textColor);
     }
 
@@ -56,45 +65,47 @@ public:
     }
 
     /**
-     * @brief Lấy mã màu chuẩn cho từng loại khối Tetrimino từ repo cũ
+     * @brief Màu sắc chuẩn của từng khối Tetrimino theo quy chuẩn Tetris quốc tế
      */
     static int getCharColor(char ch) {
         switch (ch) {
-            case 'I': return COLOR_CYAN;         // Cyan - Khối thẳng
-            case 'O': return COLOR_YELLOW;       // Vàng - Khối vuông
-            case 'T': return COLOR_MAGENTA;      // Hồng tím - Khối chữ T
+            case 'I': return COLOR_CYAN;         // Cyan - Khối dài I
+            case 'O': return COLOR_YELLOW;       // Vàng - Khối vuông O
+            case 'T': return COLOR_MAGENTA;      // Tím hồng - Khối chữ T
             case 'S': return COLOR_GREEN;        // Xanh lá - Khối chữ S
             case 'Z': return COLOR_RED;          // Đỏ - Khối chữ Z
             case 'J': return COLOR_BLUE;         // Xanh dương - Khối chữ J
             case 'L': return COLOR_DARK_YELLOW;  // Cam/Vàng sẫm - Khối chữ L
-            case '#': return COLOR_DARK_CYAN;    // Xanh lơ viền tường
+            case '#': return COLOR_DARK_CYAN;    // Viền tường
+            case '+': return COLOR_DARK_GRAY;    // Ghost piece (bóng dự đoán tiếp đất)
             default:  return COLOR_WHITE;
         }
     }
 
     /**
-     * @brief In một ô trên bàn cờ với màu sắc và tỷ lệ vuông vức chuẩn
-     * @param ch Ký tự đại diện ('I', 'O', '#', ' ', v.v.)
-     * @param squareMode true: in 2 ký tự ("[]", "##", "  ") để vuông vức; false: in 1 ký tự
+     * @brief In 1 ô tế bào với màu sắc và tỷ lệ vuông vức 1:1
      */
-    static void printCell(char ch, bool squareMode = true) {
+    static void printCell(char ch) {
         if (ch == ' ') {
-            if (squareMode) std::cout << "  ";
-            else std::cout << ' ';
+            std::cout << "  ";
+            return;
+        }
+
+        if (ch == '+') {
+            // Ghost piece: đường nét thanh dự đoán vị trí rơi
+            setColor(COLOR_DARK_GRAY);
+            std::cout << "::";
+            resetColor();
             return;
         }
 
         int color = getCharColor(ch);
         setColor(color);
 
-        if (squareMode) {
-            if (ch == '#') {
-                std::cout << "##";
-            } else {
-                std::cout << "[]";
-            }
+        if (ch == '#') {
+            std::cout << "##";
         } else {
-            std::cout << ch;
+            std::cout << "[]";
         }
 
         resetColor();
