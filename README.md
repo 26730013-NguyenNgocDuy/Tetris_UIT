@@ -66,6 +66,18 @@ Mỗi hàng phá được làm gạch rơi nhanh thêm **30 ms**. Phá 4 hàng m
 | `X` | ⬇️ Đẩy khối xuống nhanh hơn |
 | `Q` | 🚪 Thoát game |
 
+### Xoay khối bằng tính đa hình
+
+`Blocks` là lớp cơ sở trừu tượng, `rotate()` là hàm thuần ảo, mỗi loại khối xoay một kiểu:
+
+| Lớp | Khi xoay |
+| --- | --- |
+| `BlockO` | Không đổi gì, hình vuông xoay vẫn vậy |
+| `BlockI` | Đổi qua lại nằm ngang và dựng đứng, đúng 2 trạng thái |
+| `BlockT`, `BlockS`, `BlockZ`, `BlockJ`, `BlockL` | Xoay 90 độ, đủ 4 trạng thái |
+
+Chỗ gọi chỉ cầm con trỏ `Blocks *current` và gọi `current->rotate()`, không cần biết đang là khối gì.
+
 > 💡 Nhớ tắt **Caps Lock** và chuyển bộ gõ sang **tiếng Anh**, không thì game sẽ không nhận phím đâu!
 
 ---
@@ -126,7 +138,11 @@ g++ -O2 test_speed.cpp -o test_speed.exe
 
 ```
 Tetris_UIT/
-├── main.cpp                # Vòng lặp game, bàn chơi, điều khiển, xoay khối, giao diện
+├── main.cpp                # Vòng lặp game, giao diện, điều khiển
+├── Blocks.h / Blocks.cpp   # Lớp trừu tượng cho một khối: hình dạng, vị trí, hàm xoay ảo
+├── BlockTypes.h / .cpp     # Bảy lớp con: BlockI, BlockO, BlockT, BlockS, BlockZ, BlockJ, BlockL
+├── Board.h / Board.cpp     # Sân chơi: lưới, va chạm, đặt khối, xoá hàng
+├── Bag7.h / Bag7.cpp       # Túi 7 khối, phát khối không bị trùng liên tục
 ├── ColorRenderer.h         # Renderer màu sắc ANSI, bảng mã CP437, khử giật màn hình
 ├── DropSpeedController.h   # Quản lý tốc độ rơi tăng dần, level và điểm combo (SV5)
 ├── test_speed.cpp          # Bộ kiểm thử tự động (Unit Test 6/6 test cases)
