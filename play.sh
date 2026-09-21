@@ -5,7 +5,7 @@ cd "$(dirname "$0")" || exit 1
 echo "Đang biên dịch Tetris C++..."
 # Danh sach file nguon cua game. Them file .cpp moi vao day khi tach lop.
 # Khong dung *.cpp vi test_speed.cpp co ham main() rieng.
-SRC="main.cpp Blocks.cpp BlockTypes.cpp Board.cpp Bag7.cpp"
+SRC="main.cpp Blocks.cpp BlockTypes.cpp Board.cpp Bag7.cpp Renderer.cpp Input.cpp Game.cpp GameState.cpp"
 
 if ! g++ -std=c++11 -O2 $SRC -o tetris; then
     echo "[LỖI] Không thể biên dịch. Hãy cài Xcode Command Line Tools: xcode-select --install"
