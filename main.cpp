@@ -126,11 +126,19 @@ void holdPiece()
 }
 
 DropSpeedController speedController;
+bool isGamePaused = false;
 
-// Hàm vẽ toàn bộ UI chuẩn báo cáo 3.3
-void draw()
+// Hàm vẽ toàn bộ UI đẳng cấp chuẩn Tetris Web Pro Max
+void draw(bool showPauseModal = false, bool showGameOverModal = false)
 {
     ColorRenderer::gotoxy(0, 0);
+
+    // Banner Header phong cách UIT Pro Max
+    ColorRenderer::setColor(COLOR_CYAN);
+    cout << "  ============================================================\n";
+    cout << "    🎮 TETRIS PRO MAX 🎮 | UIT SS004 - NHOM HIDDEN GEM\n";
+    cout << "  ============================================================\n";
+    ColorRenderer::resetColor();
 
     // Tính toán bóng khối rơi (Ghost piece)
     int ghostY = getGhostY();
@@ -170,23 +178,26 @@ void draw()
         }
     }
 
-    // Dựng 20 dòng hoàn chỉnh kết hợp HUD bên trái và bên phải
+    int currentHighScore = ColorRenderer::getHighScore();
+    if (speedController.getScore() > currentHighScore)
+        currentHighScore = speedController.getScore();
+
+    // Dựng 20 dòng hoàn chỉnh kết hợp HUD bên trái và bên phải (Theo bản Web)
     for (int row = 0; row < H; row++)
     {
-        // ================= KHUNG BÊN TRÁI =================
-        // Dòng 0: Header GIỮ
+        // ================= PANEL BÊN TRÁI (HOLD, LEVEL, LINES) =================
         if (row == 0)
         {
             ColorRenderer::setColor(COLOR_DARK_CYAN);
-            cout << "+------------+  ";
+            cout << "  +------------+  ";
             ColorRenderer::resetColor();
         }
         else if (row == 1)
         {
             ColorRenderer::setColor(COLOR_DARK_CYAN);
-            cout << "| ";
+            cout << "  | ";
             ColorRenderer::setColor(COLOR_YELLOW);
-            cout << "GIU (C)    ";
+            cout << "HOLD (C)   ";
             ColorRenderer::setColor(COLOR_DARK_CYAN);
             cout << "|  ";
             ColorRenderer::resetColor();
@@ -196,12 +207,12 @@ void draw()
             // Hiển thị khối giữ trong 4 dòng
             int pi = row - 2;
             ColorRenderer::setColor(COLOR_DARK_CYAN);
-            cout << "|  ";
+            cout << "  |  ";
             ColorRenderer::resetColor();
             for (int pj = 0; pj < 4; pj++)
             {
                 char ch = (holdBlock != -1) ? Blocks::shapeAt(holdBlock, pi, pj) : ' ';
-                ColorRenderer::printCell(ch);
+                ColorRenderer::printCell(ch, false);
             }
             ColorRenderer::setColor(COLOR_DARK_CYAN);
             cout << "  |  ";
@@ -210,118 +221,86 @@ void draw()
         else if (row == 6)
         {
             ColorRenderer::setColor(COLOR_DARK_CYAN);
-            cout << "+------------+  ";
+            cout << "  +------------+  ";
+            ColorRenderer::resetColor();
+        }
+        else if (row == 8)
+        {
+            ColorRenderer::setColor(COLOR_DARK_CYAN);
+            cout << "  +------------+  ";
+            ColorRenderer::resetColor();
+        }
+        else if (row == 9)
+        {
+            ColorRenderer::setColor(COLOR_DARK_CYAN);
+            cout << "  | ";
+            ColorRenderer::setColor(COLOR_CYAN);
+            cout << "LEVEL      ";
+            ColorRenderer::setColor(COLOR_DARK_CYAN);
+            cout << "|  ";
             ColorRenderer::resetColor();
         }
         else if (row == 10)
         {
             ColorRenderer::setColor(COLOR_DARK_CYAN);
-            cout << "+------------+  ";
-            ColorRenderer::resetColor();
-        }
-        else if (row == 11)
-        {
-            ColorRenderer::setColor(COLOR_DARK_CYAN);
-            cout << "| ";
-            ColorRenderer::setColor(COLOR_CYAN);
-            cout << "DIEM       ";
-            ColorRenderer::setColor(COLOR_DARK_CYAN);
-            cout << "|  ";
-            ColorRenderer::resetColor();
-        }
-        else if (row == 12)
-        {
-            ColorRenderer::setColor(COLOR_DARK_CYAN);
-            cout << "| ";
-            ColorRenderer::setColor(COLOR_WHITE);
-            cout << setw(10) << left << speedController.getScore();
-            ColorRenderer::setColor(COLOR_DARK_CYAN);
-            cout << " |  ";
-            ColorRenderer::resetColor();
-        }
-        else if (row == 13)
-        {
-            ColorRenderer::setColor(COLOR_DARK_CYAN);
-            cout << "| ";
-            ColorRenderer::setColor(COLOR_CYAN);
-            cout << "CAP DO     ";
-            ColorRenderer::setColor(COLOR_DARK_CYAN);
-            cout << "|  ";
-            ColorRenderer::resetColor();
-        }
-        else if (row == 14)
-        {
-            ColorRenderer::setColor(COLOR_DARK_CYAN);
-            cout << "| ";
+            cout << "  | ";
             ColorRenderer::setColor(COLOR_YELLOW);
             cout << setw(10) << left << speedController.getLevel();
             ColorRenderer::setColor(COLOR_DARK_CYAN);
             cout << " |  ";
             ColorRenderer::resetColor();
         }
-        else if (row == 15)
+        else if (row == 11)
         {
             ColorRenderer::setColor(COLOR_DARK_CYAN);
-            cout << "| ";
+            cout << "  +------------+  ";
+            ColorRenderer::resetColor();
+        }
+        else if (row == 13)
+        {
+            ColorRenderer::setColor(COLOR_DARK_CYAN);
+            cout << "  +------------+  ";
+            ColorRenderer::resetColor();
+        }
+        else if (row == 14)
+        {
+            ColorRenderer::setColor(COLOR_DARK_CYAN);
+            cout << "  | ";
             ColorRenderer::setColor(COLOR_CYAN);
-            cout << "SO HANG    ";
+            cout << "LINES      ";
             ColorRenderer::setColor(COLOR_DARK_CYAN);
             cout << "|  ";
             ColorRenderer::resetColor();
         }
-        else if (row == 16)
+        else if (row == 15)
         {
             ColorRenderer::setColor(COLOR_DARK_CYAN);
-            cout << "| ";
+            cout << "  | ";
             ColorRenderer::setColor(COLOR_GREEN);
             cout << setw(10) << left << speedController.getTotalLinesCleared();
             ColorRenderer::setColor(COLOR_DARK_CYAN);
             cout << " |  ";
             ColorRenderer::resetColor();
         }
-        else if (row == 17)
+        else if (row == 16)
         {
             ColorRenderer::setColor(COLOR_DARK_CYAN);
-            cout << "| ";
-            ColorRenderer::setColor(COLOR_CYAN);
-            cout << "NHIP ROI   ";
-            ColorRenderer::setColor(COLOR_DARK_CYAN);
-            cout << "|  ";
-            ColorRenderer::resetColor();
-        }
-        else if (row == 18)
-        {
-            ColorRenderer::setColor(COLOR_DARK_CYAN);
-            cout << "| ";
-            ColorRenderer::setColor(COLOR_MAGENTA);
-            string speedStr = to_string(speedController.getDropInterval()) + "ms";
-            if (speedController.getComboStreak() > 1)
-            {
-                speedStr += " x" + to_string(speedController.getComboStreak());
-            }
-            cout << setw(10) << left << speedStr;
-            ColorRenderer::setColor(COLOR_DARK_CYAN);
-            cout << " |  ";
-            ColorRenderer::resetColor();
-        }
-        else if (row == 19)
-        {
-            ColorRenderer::setColor(COLOR_DARK_CYAN);
-            cout << "+------------+  ";
+            cout << "  +------------+  ";
             ColorRenderer::resetColor();
         }
         else
         {
-            cout << "                ";
+            cout << "                  ";
         }
 
-        // ================= SÂN CHƠI CHÍNH (BÀN CỜ) =================
+        // ================= SÂN CHƠI CHÍNH (BÀN CỜ 10x20 + 2 VIỀN) =================
         for (int col = 0; col < W; col++)
         {
-            ColorRenderer::printCell(displayBoard[row][col]);
+            bool isPlayfield = (col > 0 && col < W - 1);
+            ColorRenderer::printCell(displayBoard[row][col], isPlayfield);
         }
 
-        // ================= KHUNG BÊN PHẢI (TIẾP THEO) =================
+        // ================= PANEL BÊN PHẢI (NEXT, SCORE, HIGH SCORE, SPEED) =================
         if (row == 0)
         {
             ColorRenderer::setColor(COLOR_DARK_CYAN);
@@ -333,31 +312,112 @@ void draw()
             ColorRenderer::setColor(COLOR_DARK_CYAN);
             cout << "  | ";
             ColorRenderer::setColor(COLOR_YELLOW);
-            cout << "TIEP THEO  ";
+            cout << "NEXT       ";
             ColorRenderer::setColor(COLOR_DARK_CYAN);
             cout << "|";
             ColorRenderer::resetColor();
         }
-        else if (row >= 2 && row <= 17)
+        else if (row >= 2 && row <= 5)
         {
-            // Hiển thị 4 khối tiếp theo trong hàng đợi (mỗi khối chiếm 4 dòng)
-            int blockIdx = (row - 2) / 4;
-            int blockRow = (row - 2) % 4;
-            int pId = nextQueue[blockIdx];
-
+            // Hiển thị khối tiếp theo trong hàng đợi
+            int pi = row - 2;
+            int pId = nextQueue[0];
             ColorRenderer::setColor(COLOR_DARK_CYAN);
             cout << "  |  ";
             ColorRenderer::resetColor();
             for (int pj = 0; pj < 4; pj++)
             {
-                char ch = Blocks::shapeAt(pId, blockRow, pj);
-                ColorRenderer::printCell(ch);
+                char ch = Blocks::shapeAt(pId, pi, pj);
+                ColorRenderer::printCell(ch, false);
             }
             ColorRenderer::setColor(COLOR_DARK_CYAN);
             cout << "  |";
             ColorRenderer::resetColor();
         }
+        else if (row == 6)
+        {
+            ColorRenderer::setColor(COLOR_DARK_CYAN);
+            cout << "  +------------+";
+            ColorRenderer::resetColor();
+        }
+        else if (row == 8)
+        {
+            ColorRenderer::setColor(COLOR_DARK_CYAN);
+            cout << "  +------------+";
+            ColorRenderer::resetColor();
+        }
+        else if (row == 9)
+        {
+            ColorRenderer::setColor(COLOR_DARK_CYAN);
+            cout << "  | ";
+            ColorRenderer::setColor(COLOR_CYAN);
+            cout << "SCORE      ";
+            ColorRenderer::setColor(COLOR_DARK_CYAN);
+            cout << "|";
+            ColorRenderer::resetColor();
+        }
+        else if (row == 10)
+        {
+            ColorRenderer::setColor(COLOR_DARK_CYAN);
+            cout << "  | ";
+            ColorRenderer::setColor(COLOR_WHITE);
+            cout << setw(10) << left << speedController.getScore();
+            ColorRenderer::setColor(COLOR_DARK_CYAN);
+            cout << " |";
+            ColorRenderer::resetColor();
+        }
+        else if (row == 11)
+        {
+            ColorRenderer::setColor(COLOR_DARK_CYAN);
+            cout << "  +------------+";
+            ColorRenderer::resetColor();
+        }
+        else if (row == 13)
+        {
+            ColorRenderer::setColor(COLOR_DARK_CYAN);
+            cout << "  +------------+";
+            ColorRenderer::resetColor();
+        }
+        else if (row == 14)
+        {
+            ColorRenderer::setColor(COLOR_DARK_CYAN);
+            cout << "  | ";
+            ColorRenderer::setColor(COLOR_CYAN);
+            cout << "HIGH SCORE ";
+            ColorRenderer::setColor(COLOR_DARK_CYAN);
+            cout << "|";
+            ColorRenderer::resetColor();
+        }
+        else if (row == 15)
+        {
+            ColorRenderer::setColor(COLOR_DARK_CYAN);
+            cout << "  | ";
+            ColorRenderer::setColor(COLOR_YELLOW);
+            cout << setw(10) << left << currentHighScore;
+            ColorRenderer::setColor(COLOR_DARK_CYAN);
+            cout << " |";
+            ColorRenderer::resetColor();
+        }
+        else if (row == 16)
+        {
+            ColorRenderer::setColor(COLOR_DARK_CYAN);
+            cout << "  +------------+";
+            ColorRenderer::resetColor();
+        }
         else if (row == 18)
+        {
+            ColorRenderer::setColor(COLOR_DARK_CYAN);
+            cout << "  | ";
+            ColorRenderer::setColor(COLOR_MAGENTA);
+            string spd = to_string(speedController.getDropInterval()) + "ms";
+            if (speedController.getComboStreak() > 1)
+                spd += " x" + to_string(speedController.getComboStreak());
+            cout << setw(10) << left << spd;
+            ColorRenderer::setColor(COLOR_DARK_CYAN);
+            cout << " |";
+            ColorRenderer::resetColor();
+        }
+        else if (row == 19)
         {
             ColorRenderer::setColor(COLOR_DARK_CYAN);
             cout << "  +------------+";
@@ -368,12 +428,40 @@ void draw()
             cout << "                ";
         }
 
-        cout << "\n";
+        cout << "\033[K\n";
     }
 
-    // Dòng hướng dẫn phím bấm phía dưới
+    // Modal TẠM DỪNG (P)
+    if (showPauseModal)
+    {
+        ColorRenderer::gotoxy(20, 11);
+        ColorRenderer::setColor(COLOR_BLACK, COLOR_YELLOW);
+        cout << "  [!] TAM DUNG (PAUSED)  ";
+        ColorRenderer::gotoxy(20, 12);
+        cout << "   Nhan phim P tiep tuc  ";
+        ColorRenderer::resetColor();
+    }
+
+    // Modal GAME OVER
+    if (showGameOverModal)
+    {
+        ColorRenderer::gotoxy(20, 10);
+        ColorRenderer::setColor(COLOR_WHITE, COLOR_RED);
+        cout << "     GAME OVER      ";
+        ColorRenderer::gotoxy(20, 11);
+        ColorRenderer::setColor(COLOR_BLACK, COLOR_WHITE);
+        cout << "  Diem so: " << setw(10) << left << speedController.getScore() << " ";
+        ColorRenderer::gotoxy(20, 12);
+        cout << "  [R]: Choi lai         ";
+        ColorRenderer::gotoxy(20, 13);
+        cout << "  [Q]: Thoat game       ";
+        ColorRenderer::resetColor();
+    }
+
+    // Dòng hướng dẫn phím bấm phía dưới (ngắn gọn, chống tràn buffer)
     ColorRenderer::setColor(COLOR_DARK_GRAY);
-    cout << "\n[A/D]: Trai/Phai  [W]: Xoay  [S]: Roi nhanh  [SPACE]: Tha ngay  [C]: Giu  [Q]: Thoat\n";
+    cout << "\n  [< / >] hoac [A/D]: Trai/Phai   [^/W]: Xoay    [v/S]: Xuong\033[K\n";
+    cout << "  [SPACE]: Tha ngay  [C]: Giu khoi [P]: Tam dung  [Q]: Thoat\033[K\n";
     ColorRenderer::resetColor();
 }
 
@@ -392,11 +480,40 @@ int removeLine()
             i++;
 
             draw();
-            Sleep(120);
+            Sleep(80);
         }
     }
 
     return clearedCount;
+}
+
+// Hàm đọc phím thông minh hỗ trợ cả ký tự thường (A/D/W/S) lẫn phím Mũi Tên (Arrow Keys)
+int readInputKey()
+{
+    int c = getch();
+#ifdef _WIN32
+    if (c == 0 || c == 224 || c == -32)
+    {
+        int ext = getch();
+        if (ext == 72) return 'w';      // Mũi tên Lên -> Xoay khối
+        if (ext == 80) return 's';      // Mũi tên Xuống -> Rơi nhanh (Soft drop)
+        if (ext == 75) return 'a';      // Mũi tên Trái -> Di chuyển sang trái
+        if (ext == 77) return 'd';      // Mũi tên Phải -> Di chuyển sang phải
+    }
+#else
+    if (c == 27) // ANSI Escape Sequence cho phím mũi tên trên Linux/macOS
+    {
+        if (kbhit() && getch() == '[')
+        {
+            int ext = getch();
+            if (ext == 'A') return 'w'; // Up
+            if (ext == 'B') return 's'; // Down
+            if (ext == 'D') return 'a'; // Left
+            if (ext == 'C') return 'd'; // Right
+        }
+    }
+#endif
+    return c;
 }
 
 int main()
@@ -404,97 +521,169 @@ int main()
     srand(static_cast<unsigned int>(time(0)));
     ColorRenderer::setupConsole();
 
+restart_game_session:
     board.reset();
     initQueue();
     spawn(-1);
+    speedController = DropSpeedController();
+    isGamePaused = false;
+
+    const int TICK_MS = 25; // 40 FPS, cực kỳ nhạy phím (<25ms response time)
+    int dropTimer = 0;
+
+    // Gắn khối ban đầu vào bàn cờ và vẽ frame khởi động
+    board.place(*current);
+    draw();
 
     while (1)
     {
-        board.erase(*current);
+        bool moved = false;
 
-        if (kbhit())
+        // 1. Đọc phím liên tục không nghẽn luồng (Non-blocking input)
+        while (kbhit())
         {
-            char c = getch();
+            int c = readInputKey();
 
-            if (c == 'a' && canMove(-1, 0))
+            if (c == 'p' || c == 'P')
+            {
+                isGamePaused = !isGamePaused;
+                draw(isGamePaused, false);
+                continue;
+            }
+
+            if (isGamePaused)
+            {
+                if (c == 'q' || c == 'Q')
+                    goto game_quit;
+                continue;
+            }
+
+            board.erase(*current);
+
+            if ((c == 'a' || c == 'A') && canMove(-1, 0))
+            {
                 current->move(-1, 0);
-
-            if (c == 'd' && canMove(1, 0))
+                moved = true;
+            }
+            else if ((c == 'd' || c == 'D') && canMove(1, 0))
+            {
                 current->move(1, 0);
-
-            if (c == 's')
+                moved = true;
+            }
+            else if (c == 's' || c == 'S') // Soft drop
             {
                 if (canMove(0, 1))
                 {
                     current->move(0, 1);
-                    speedController.addDropScore(1);
+                    dropTimer = 0;
+                    moved = true;
                 }
             }
-
-            if (c == 'w')
-                rotate();
-
-            if (c == 'c' || c == 'C')
-                holdPiece();
-
-            if (c == ' ') // Hard drop
+            else if (c == 'w' || c == 'W')
             {
-                int dropDist = 0;
+                rotate();
+                moved = true;
+            }
+            else if (c == 'c' || c == 'C')
+            {
+                holdPiece();
+                moved = true;
+            }
+            else if (c == ' ') // Hard drop
+            {
                 while (canMove(0, 1))
                 {
                     current->move(0, 1);
-                    dropDist++;
                 }
-                speedController.addDropScore(dropDist * 2);
+                moved = true;
+                dropTimer = speedController.getDropInterval();
             }
-
-            if (c == 'q')
-                break;
-        }
-
-        if (canMove(0, 1))
-        {
-            current->move(0, 1);
-        }
-        else
-        {
-            // Block đã chạm đáy
-            board.place(*current);
-
-            // Xóa line
-            int cleared = removeLine();
-
-            // Tăng tốc độ nếu có line bị xóa, hoặc reset combo nếu không ăn line
-            if (cleared > 0)
-                speedController.onLinesCleared(cleared);
-            else
-                speedController.resetCombo();
-
-            // Spawn block mới
-            spawn(-1);
-
-            // Kiểm tra GameOver
-            if (!canMove(0, 0))
+            else if (c == 'q' || c == 'Q')
             {
-                draw();
-                ColorRenderer::gotoxy(18, 10);
-                ColorRenderer::setColor(COLOR_RED, COLOR_WHITE);
-                cout << "   GAME OVER!   ";
-                ColorRenderer::resetColor();
-                break;
+                board.place(*current);
+                goto game_quit;
+            }
+
+            board.place(*current);
+        }
+
+        if (isGamePaused)
+        {
+            Sleep(TICK_MS);
+            continue;
+        }
+
+        // 2. Xử lý rơi tự nhiên theo bộ điều tốc
+        dropTimer += TICK_MS;
+        if (dropTimer >= speedController.getDropInterval())
+        {
+            dropTimer = 0;
+            board.erase(*current);
+
+            if (canMove(0, 1))
+            {
+                current->move(0, 1);
+                moved = true;
+                board.place(*current);
+            }
+            else
+            {
+                // Khối đã chạm đáy -> Khóa vào bàn cờ
+                board.place(*current);
+
+                // Xóa hàng đầy nếu có
+                int cleared = removeLine();
+
+                // Cập nhật gia tốc rơi và combo streak
+                if (cleared > 0)
+                    speedController.onLinesCleared(cleared);
+                else
+                    speedController.resetCombo();
+
+                // Sinh khối mới
+                spawn(-1);
+
+                // Kiểm tra thua cuộc (Game Over)
+                if (!canMove(0, 0))
+                {
+                    ColorRenderer::setHighScore(speedController.getScore());
+                    draw(false, true); // Hiện Modal Game Over
+
+                    // Vòng lặp chờ bấm R để chơi lại hoặc Q để thoát
+                    while (1)
+                    {
+                        char endKey = getch();
+                        if (endKey == 'r' || endKey == 'R')
+                        {
+                            goto restart_game_session;
+                        }
+                        if (endKey == 'q' || endKey == 'Q')
+                        {
+                            goto game_quit;
+                        }
+                    }
+                }
+
+                board.place(*current);
+                moved = true;
             }
         }
 
-        board.place(*current);
+        // 3. Chỉ vẽ lại khi có dịch chuyển (tối ưu hóa I/O console, mượt mà 100%)
+        if (moved)
+        {
+            draw();
+        }
 
-        draw();
-
-        Sleep(speedController.getDropInterval());
+        Sleep(TICK_MS);
     }
 
-    ColorRenderer::gotoxy(0, 23);
-    cout << "\nNhan phim bat ky de thoat...";
-    getch();
+game_quit:
+    ColorRenderer::setHighScore(speedController.getScore());
+    delete current;
+    current = 0;
+    ColorRenderer::gotoxy(0, 26);
+    cout << "\nCam on ban da trai nghiem Tetris Pro Max!\n";
 
     return 0;
 }

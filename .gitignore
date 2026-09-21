@@ -71,3 +71,6 @@ Testing/
 
 # VS Code settings (may khac nhau moi nguoi)
 .vscode/
+
+# Diem cao luu khi choi
+highscore.dat

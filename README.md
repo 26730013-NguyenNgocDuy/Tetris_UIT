@@ -95,14 +95,17 @@ cd Tetris_UIT
 
 **2. Biên dịch & Chơi game**
 
-Với **MinGW / g++**:
+- **🌐 Cách 1: Chơi ngay trên Trình Duyệt Web (Khuyên Dùng khi Báo Cáo / Trình Chiếu)**
+  - Nhấp đúp vào **`Play_Web.bat`** hoặc mở trực tiếp [dist_web/index.html](file:///dist_web/index.html).
+  - Giao diện Light/Dark sắc nét, chuẩn Canvas 60 FPS, âm thanh Polyphonic Web Audio, hỗ trợ đầy đủ phím và cảm ứng Mobile!
 
-```bash
-g++ -O2 main.cpp -o tetris.exe
-./tetris.exe
-```
-
-Hoặc click đúp file **`Play_Game.bat`** để tự động build và chạy ngay trong 1 click!
+- **🖥️ Cách 2: Chơi bản C++ Console (Minh chứng môn OOP)**
+  - Với **MinGW / g++**:
+  ```bash
+  g++ -O2 main.cpp -o tetris.exe
+  ./tetris.exe
+  ```
+  - Hoặc click đúp file **`Play_Game.bat`** để tự động build và chạy ngay trong 1 click!
 
 **3. Chạy kiểm thử tự động (Unit Test)**
 
