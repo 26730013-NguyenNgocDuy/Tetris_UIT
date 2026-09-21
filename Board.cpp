@@ -15,6 +15,7 @@ void Board::reset()
     for (int r = 0; r < ROWS; r++)
         for (int c = 0; c < COLS; c++)
         {
+            // Hàng đầu, hàng cuối, cột đầu, cột cuối là tường
             bool onEdge = (r == 0 || r == ROWS - 1 || c == 0 || c == COLS - 1);
             grid[r][c] = onEdge ? WALL : EMPTY;
         }
@@ -27,8 +28,10 @@ bool Board::isInside(int row, int col)
 
 char Board::at(int row, int col) const
 {
+    // Toạ độ ngoài lưới coi như tường. Nhờ vậy canPlace() không phải viết thêm
+    // câu lệnh kiểm tra biên riêng.
     if (!isInside(row, col))
-        return WALL;            // outside the field counts as wall
+        return WALL;
     return grid[row][col];
 }
 
@@ -64,7 +67,7 @@ bool Board::isRowFull(int row) const
 
 void Board::removeRow(int row)
 {
-    // Every row above slides down one line, the top row becomes empty
+    // Mọi hàng phía trên tụt xuống một dòng, hàng trên cùng thành trống
     for (int r = row; r > 1; r--)
         for (int c = 1; c < COLS - 1; c++)
             grid[r][c] = grid[r - 1][c];
@@ -87,7 +90,7 @@ bool Board::canPlace(const Tetromino &piece, int dx, int dy) const
             if (c < 1 || c >= COLS - 1 || r >= ROWS - 1)
                 return false;
 
-            // Rows above the top are still free, a new piece falls in from there
+            // Phía trên đỉnh bàn cờ vẫn trống, khối mới rơi vào từ đó
             if (r >= 0 && !isEmpty(r, c))
                 return false;
         }

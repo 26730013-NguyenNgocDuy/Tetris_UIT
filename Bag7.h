@@ -4,26 +4,29 @@
 #include "Tetromino.h"
 
 /**
- * @brief The official Tetris randomizer: a bag with all seven pieces.
+ * @brief Cách random chuẩn của Tetris: một túi chứa đủ bảy loại khối.
  *
- * rand() % 7 can give the same piece five times in a row and can hide a piece
- * for a long time. The bag shuffles all seven types, hands them out one by one,
- * and only refills when it is empty, so every seven pieces contain each type
- * exactly once.
+ * rand() % 7 có thể cho ra cùng một khối năm lần liên tiếp, và cũng có thể giấu
+ * một loại khối rất lâu không ra. Túi này xáo đủ bảy loại, phát lần lượt từng
+ * khối, hết túi mới xáo lại. Nhờ vậy cứ bảy khối liên tiếp là có đủ bảy loại,
+ * mỗi loại đúng một lần.
+ *
+ * TÍNH ĐÓNG GÓI: mảng pieces và vị trí đang phát đều riêng tư. Bên ngoài chỉ gọi
+ * next() để xin khối kế tiếp, không cần biết túi xáo kiểu gì.
  */
 class Bag7
 {
-    int pieces[Tetromino::TYPE_COUNT];
-    int position;                        // index of the next piece to hand out
-
 public:
     Bag7();
 
-    int next();                          // type of the next piece
+    int next();                          // loại khối kế tiếp
     int remaining() const { return Tetromino::TYPE_COUNT - position; }
 
 private:
-    void refill();                       // put all seven types back and shuffle
+    int pieces[Tetromino::TYPE_COUNT];   // bảy loại khối đã xáo
+    int position;                        // vị trí khối sắp phát
+
+    void refill();                       // bỏ lại đủ bảy loại rồi xáo
 };
 
 #endif // BAG7_H

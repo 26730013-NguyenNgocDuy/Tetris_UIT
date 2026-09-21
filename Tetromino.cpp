@@ -1,7 +1,7 @@
 #include "Tetromino.h"
 
-// The seven standard tetrominoes. Each letter is also the color key used by
-// ColorRenderer, so the piece carries its own color with it.
+// Bảng hình dạng 7 khối chuẩn. Chữ cái cũng là mã màu mà ColorRenderer dùng,
+// nên mỗi khối tự mang màu của nó. Bảng để riêng tư nên chỉ lớp này đọc được.
 const char Tetromino::SHAPES[TYPE_COUNT][SIZE][SIZE] = {
     // I
     {{' ', ' ', ' ', ' '},
@@ -42,7 +42,8 @@ const char Tetromino::SHAPES[TYPE_COUNT][SIZE][SIZE] = {
 
 Tetromino::Tetromino(int pieceType, int startX, int startY)
 {
-    // Keep the type inside the table even if the caller passes a wrong number
+    // Hàm thiết lập tự kiểm tra dữ liệu: loại khối sai thì đưa về 0, nên đối
+    // tượng luôn ở trạng thái hợp lệ ngay khi vừa tạo ra
     if (pieceType < 0 || pieceType >= TYPE_COUNT)
         pieceType = 0;
 
@@ -83,7 +84,7 @@ Tetromino Tetromino::rotated() const
 {
     Tetromino copy(*this);
 
-    // Turn 90 degrees clockwise inside the 4x4 box
+    // Xoay 90 độ theo chiều kim đồng hồ trong ô vuông 4x4
     for (int i = 0; i < SIZE; i++)
         for (int j = 0; j < SIZE; j++)
             copy.shape[i][j] = shape[SIZE - 1 - j][i];

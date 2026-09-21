@@ -4,9 +4,9 @@
 
 Bag7::Bag7()
 {
-    // Start with an empty bag on purpose. A Bag7 built before main() runs would
-    // otherwise shuffle before srand() is called, and every game would begin
-    // with the same pieces. The first next() fills the bag instead.
+    // Cố ý để túi rỗng lúc đầu. Biến toàn cục được tạo TRƯỚC khi main() chạy,
+    // mà srand() lại gọi bên trong main(), nên nếu xáo ngay ở đây thì ván nào
+    // cũng ra dãy khối giống hệt nhau. Để rỗng thì lần gọi next() đầu tiên mới xáo.
     position = Tetromino::TYPE_COUNT;
 }
 
@@ -15,7 +15,8 @@ void Bag7::refill()
     for (int i = 0; i < Tetromino::TYPE_COUNT; i++)
         pieces[i] = i;
 
-    // Fisher-Yates shuffle: walk from the end and swap with a random earlier slot
+    // Xáo bài kiểu Fisher-Yates: đi từ cuối về đầu, mỗi bước đổi chỗ phần tử
+    // đang xét với một phần tử ngẫu nhiên đứng trước nó
     for (int i = Tetromino::TYPE_COUNT - 1; i > 0; i--)
     {
         int j = rand() % (i + 1);
@@ -29,6 +30,7 @@ void Bag7::refill()
 
 int Bag7::next()
 {
+    // Hết túi thì xáo lại, nên người chơi luôn có khối để nhận
     if (position >= Tetromino::TYPE_COUNT)
         refill();
 

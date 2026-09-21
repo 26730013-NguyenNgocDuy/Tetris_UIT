@@ -4,38 +4,45 @@
 #include "Tetromino.h"
 
 /**
- * @brief The playing field: the wall and every locked cell.
+ * @brief Sân chơi: phần tường bao quanh và mọi ô gạch đã nằm yên.
  *
- * The grid is private. Everything outside reads it through at() and changes it
- * through set(), so no other file can touch the array by hand.
+ * TÍNH ĐÓNG GÓI: mảng grid để riêng tư. Trước khi refactor, mọi hàm trong
+ * main.cpp đều ghi thẳng vào mảng board[H][W], sai một chỗ là hỏng cả bàn cờ mà
+ * rất khó tìm. Nay muốn đọc phải gọi at(), muốn ghi phải gọi set(), và set() tự
+ * bỏ qua toạ độ nằm ngoài lưới nên không ghi tràn được.
+ *
+ * TÍNH TRỪU TƯỢNG: bên ngoài chỉ hỏi "khối này đặt vừa không" qua canPlace(),
+ * "hàng này đầy chưa" qua isRowFull(), mà không cần biết lưới lưu kiểu gì.
  */
 class Board
 {
 public:
-    // Kept as class constants instead of #define, so the size belongs to the class
+    // Hằng số của lớp, thay cho #define H 20 và #define W 12 ở code cũ.
+    // Kích thước thuộc về bàn cờ nên đặt ngay trong lớp bàn cờ.
     static const int ROWS = 20;
     static const int COLS = 12;
-    static const char WALL = '#';
-    static const char EMPTY = ' ';
+    static const char WALL = '#';    // ký tự tường
+    static const char EMPTY = ' ';   // ký tự ô trống
 
     Board();
 
-    // Builds the wall around an empty field
+    // Dựng lại tường bao quanh, bên trong để trống
     void reset();
 
+    // Các hàm chỉ đọc đều là const
     char at(int row, int col) const;
     bool isEmpty(int row, int col) const { return at(row, col) == EMPTY; }
     void set(int row, int col, char value);
 
-    // True when the piece, moved by (dx, dy), still fits inside the walls and
-    // does not touch a cell that is already taken.
+    // Khối dịch đi (dx, dy) thì có còn nằm trong tường và không chạm ô đã có
+    // gạch hay không
     bool canPlace(const Tetromino &piece, int dx, int dy) const;
 
-    // Writes the piece into the grid, or clears the cells it stands on
+    // Ghi khối vào lưới, hoặc xoá các ô mà khối đang chiếm
     void place(const Tetromino &piece);
     void erase(const Tetromino &piece);
 
-    // Line clearing is split in two so the caller can show an effect in between
+    // Xoá hàng tách làm hai bước để bên gọi chèn được hiệu ứng nháy ở giữa
     bool isRowFull(int row) const;
     void removeRow(int row);
 
