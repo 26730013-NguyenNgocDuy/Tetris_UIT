@@ -1,178 +1,142 @@
-# Tetris Console — bản chạy thử cho nhóm
+<h1 align="center">🧱 TETRIS_UIT 🧱</h1>
 
-Khung game Tetris viết bằng **C++ thuần** trên console Windows, chia theo hướng đối tượng.
-Đã chạy được: bảng chơi, 7 khối có màu, khối rơi theo thời gian, di chuyển, xoay, rơi tức thì, xem trước khối tiếp theo, tạm dừng, thua và chơi lại.
+<p align="center">
+  <b>Xếp gạch. Phá hàng. Rồi chạy đua với chính tốc độ của bạn.</b><br>
+  <i>Tetris chạy ngay trong cửa sổ console, viết bằng C++ thuần, không cần engine hay thư viện nào.</i>
+</p>
 
-**Chưa có — dành cho nhóm viết tiếp:** xóa hàng, tính điểm theo hàng, lên cấp và tăng tốc.
+<p align="center">
+  <img src="https://img.shields.io/badge/C%2B%2B-00599C?style=for-the-badge&logo=cplusplus&logoColor=white" alt="C++">
+  <img src="https://img.shields.io/badge/Windows-Console-0078D6?style=for-the-badge&logo=windows&logoColor=white" alt="Windows Console">
+  <img src="https://img.shields.io/badge/UIT-Hidden%20Gem-ff69b4?style=for-the-badge" alt="UIT Hidden Gem">
+</p>
 
 ---
 
-## 1. Chạy thử
-
-**Cách 1 — dòng lệnh:**
-
-```bat
-build.bat run
+```
+▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓
+▓▓          ██                ▓▓
+▓▓          ██                ▓▓      Gạch rơi xuống...
+▓▓          ██                ▓▓
+▓▓          ██                ▓▓
+▓▓                            ▓▓
+▓▓                            ▓▓      ...bạn né trái, né phải...
+▓▓                            ▓▓
+▓▓████                    ████▓▓
+▓▓████      ████      ████████▓▓      ...lấp đầy một hàng...
+▓▓██████████████████  ████████▓▓
+▓▓██████████████████  ████████▓▓      💥 BÙM! Hàng biến mất.
+▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓▓      Và gạch rơi NHANH hơn. 😈
 ```
 
-`build.bat` tự tìm `g++` (Code::Blocks / MinGW) hoặc `clang++`.
+**Tetris_UIT** là đồ án môn *Kỹ năng nghề nghiệp* của nhóm **Hidden Gem** tại UIT. Tụi mình code theo kiểu *vibe coding*: code một chút, chơi thử một ván, thua, sửa, chơi lại. Mỗi thành viên phụ trách một mảnh ghép, và game lớn dần qua từng Pull Request.
 
-**Cách 2 — tự gõ lệnh:**
+---
 
-```bat
-g++ -std=c++14 -Wall src\*.cpp -o tetris.exe
+## 🔥 Điều làm game này khác biệt: phá càng nhiều, rơi càng nhanh
+
+Ở đây không có level để bạn "nghỉ mệt". **Mỗi hàng bạn phá là một lần game tăng tốc.**
+
+| Số hàng đã phá | Tốc độ rơi (mỗi ô) | Cảm giác |
+| :------------: | :----------------: | -------- |
+| 0 | 500 ms | 😌 Thong thả, uống miếng nước |
+| 5 | 350 ms | 🙂 Bắt đầu phải tập trung |
+| 10 | 200 ms | 😰 Tay bắt đầu run |
+| **14+** | **100 ms** | 🤯 Nhanh gấp 5 lần, tốc độ tối đa |
+
+Mỗi hàng phá được làm gạch rơi nhanh thêm **30 ms**. Phá 4 hàng một lúc là tăng tốc 120 ms một phát. Điểm thưởng lớn nhất của game này là… sự sống sót. 😎
+
+---
+
+## ✨ Tính năng hiện có
+
+- 🎮 **Bàn chơi cổ điển**: khung 13 × 18 ô, viền dày, gạch vẽ bằng ký tự khối `█` đậm chất retro.
+- 💥 **Phá hàng có hiệu ứng**: hàng đầy sẽ biến mất từng hàng một, mọi thứ phía trên sụp xuống theo.
+- ⚡ **Tăng tốc theo tiến độ**: xem bảng phía trên, game không bao giờ để bạn thoải mái lâu.
+- 🪶 **Siêu nhẹ**: một file `.cpp`, một file header, biên dịch xong là chơi.
+
+---
+
+## ⌨️ Điều khiển
+
+| Phím | Hành động |
+| :--: | --------- |
+| `A` | ⬅️ Sang trái |
+| `D` | ➡️ Sang phải |
+| `X` | ⬇️ Đẩy khối xuống nhanh hơn |
+| `Q` | 🚪 Thoát game |
+
+> 💡 Nhớ tắt **Caps Lock** và chuyển bộ gõ sang **tiếng Anh**, không thì game sẽ không nhận phím đâu!
+
+---
+
+## 🚀 Cài đặt và chơi ngay
+
+> 🍎 **macOS / Linux**: chạy `./play.sh` (hoặc `g++ -std=c++11 main.cpp -o tetris && ./tetris`). `Platform.h` tự thay `<windows.h>`/`<conio.h>` bằng termios và mã màu ANSI.
+
+**1. Tải source về**
+
+```bash
+git clone https://github.com/26730013-NguyenNgocDuy/Tetris_UIT.git
+cd Tetris_UIT
 ```
 
-Nếu dùng `clang++` bản MSVC thì thêm `-luser32` ở cuối.
+**2. Biên dịch & Chơi game**
 
-**Cách 3 — Code::Blocks:** tạo *Console application* rỗng → *Project → Add files…* → chọn toàn bộ file trong `src/` → *Settings → Compiler* bật `-std=c++14` → F9.
+Với **MinGW / g++**:
 
-## 2. Điều khiển
-
-| Phím | Tác dụng |
-|---|---|
-| ← → (hoặc A D) | Sang trái / phải |
-| ↑ (hoặc W) | Xoay theo chiều kim đồng hồ |
-| ↓ (hoặc S) | Rơi nhanh 1 ô |
-| Space | Rơi tức thì |
-| P | Tạm dừng / chơi tiếp |
-| R | Chơi lại |
-| Esc | Thoát |
-
-## 3. Cấu trúc
-
-```
-TetrisConsole/
-├── build.bat
-├── README.md
-└── src/
-    ├── main.cpp          tạo Game và gọi run()
-    ├── Game.h/.cpp       vòng lặp + luật chơi
-    ├── Board.h/.cpp      bảng 10 × 20, va chạm, khóa khối, xóa hàng
-    ├── Tetromino.h/.cpp  hình dạng, màu, di chuyển, xoay
-    ├── Bag7.h/.cpp       chọn khối kế tiếp theo kiểu "túi 7 khối"
-    ├── Renderer.h/.cpp   vẽ lên màn hình, chống nhấp nháy
-    ├── Input.h/.cpp      đọc phím → Command
-    └── Console.h/.cpp    bọc toàn bộ Windows API
+```bash
+g++ -O2 main.cpp -o tetris.exe
+./tetris.exe
 ```
 
-| Lớp | Chịu trách nhiệm | Không được làm |
-|---|---|---|
-| `Game` | Quyết định luật: khi nào rơi, khóa, sinh khối, thua | Tự vẽ, tự đọc phím |
-| `Board` | Lưu các ô đã khóa, trả lời "có va chạm không?" | Biết khối đang rơi là khối nào |
-| `Tetromino` | Hình dạng và vị trí của **một** khối | Biết bảng chơi ra sao |
-| `Bag7` | Trả về loại khối tiếp theo | — |
-| `Renderer` | Biến trạng thái game thành hình trên màn hình | Thay đổi trạng thái game |
-| `Input` | Dịch phím bấm thành `Command` | Biết lệnh đó dùng để làm gì |
-| `Console` | Gọi Windows API (vị trí con trỏ, màu, ghi chữ) | — |
+Hoặc click đúp file **`Play_Game.bat`** để tự động build và chạy ngay trong 1 click!
 
-Nguyên tắc: **chỉ `Console.cpp` và `Input.cpp` được include thư viện của Windows.** Các lớp logic (`Board`, `Tetromino`, `Bag7`) là C++ chuẩn, có thể kiểm thử mà không cần màn hình.
+**3. Chạy kiểm thử tự động (Unit Test)**
 
-### Sơ đồ lớp
+Để kiểm thử logic tốc độ rơi, combo và điểm số:
 
-```mermaid
-classDiagram
-    class Game {
-        -board_ : Board
-        -bag_ : Bag7
-        -current_ : Tetromino
-        -next_ : Tetromino
-        -renderer_ : Renderer
-        -input_ : Input
-        -stats_ : GameStats
-        +run()
-        +handle(Command)
-        +tick()
-        -tryMove(dx, dy) bool
-        -tryRotate() bool
-        -hardDrop()
-        -lockAndSpawn()
-        -onLinesCleared(int)
-        -fallDelayMs() int
-    }
-    class Board {
-        -grid_ : int 20x10
-        +collides(Tetromino) bool
-        +lock(Tetromino) bool
-        +removeFullLines() int
-        +colorAt(row, col) int
-    }
-    class Tetromino {
-        -type_ : PieceType
-        -local_ : 4 Point
-        -x_ : int
-        -y_ : int
-        +cells() Points
-        +moved(dx, dy) Tetromino
-        +rotatedCW() Tetromino
-        +color() int
-    }
-    class Bag7 {
-        +next() PieceType
-    }
-    class Renderer {
-        -shown_ : int 20x10
-        +drawStatic()
-        +draw(Board, Tetromino, Tetromino, GameStats)
-        +drawMessage(text1, text2)
-    }
-    class Input {
-        +poll(Command&) bool
-    }
-    class Console {
-        +init(title)$
-        +write(x, y, text, color)$
-        +sleepMs(ms)$
-    }
-    Game *-- Board
-    Game *-- Bag7
-    Game *-- Tetromino
-    Game *-- Renderer
-    Game *-- Input
-    Renderer ..> Console
-    Renderer ..> Board
-    Board ..> Tetromino
+```bash
+g++ -O2 test_speed.cpp -o test_speed.exe
+./test_speed.exe
 ```
 
-## 4. Ba ý tưởng thiết kế nên hiểu trước khi sửa code
+---
 
-**Khối không tự sửa mình.** `moved()` và `rotatedCW()` trả về **bản sao**. `Game` đưa bản sao cho `Board::collides()` kiểm tra, hợp lệ mới nhận:
+## ⚡ Cơ chế gia tốc & Điểm số (SV5)
 
-```cpp
-Tetromino candidate = current_.moved(dx, dy);
-if (board_.collides(candidate)) return false;
-current_ = candidate;
+- **Tốc độ ban đầu**: `500ms` / bước rơi.
+- **Gia tốc**: Mỗi hàng xóa được giảm `25ms`.
+- **Cấp độ (Level)**: Tăng 1 cấp mỗi 10 hàng xóa được (`Level = 1 + TotalLines / 10`).
+- **Hệ số Combo**: Ăn hàng liên tiếp kích hoạt combo streak nhân điểm thưởng (`(combo - 1) * 50 * level`).
+- **Ngưỡng an toàn tối thiểu**: `80ms` (đảm bảo không bị giật lag hay rơi tức thời).
+
+---
+
+## 💡 Bí kíp sống sót
+
+- 🧠 **Chừa một cột trống** sát tường để chờ khối thẳng rồi phá liền 4 hàng. Nhưng nhớ là phá xong thì gạch sẽ rơi nhanh hơn hẳn!
+- 🏔️ **Đừng xây núi ở giữa.** Gạch luôn xuất hiện gần giữa bàn, chồng cao ở đó là thua sớm.
+- 🐢 **Tận dụng lúc đầu game** để xếp gạch thật phẳng. Đây là lúc duy nhất bạn còn thời gian suy nghĩ.
+- 🧘 **Bình tĩnh.** Gạch rơi 80 ms một ô không đáng sợ bằng việc bạn luống cuống bấm nhầm phím.
+
+---
+
+## 📂 Cấu trúc dự án
+
+```
+Tetris_UIT/
+├── main.cpp                # Vòng lặp game, bàn chơi, điều khiển, xoay khối, giao diện
+├── ColorRenderer.h         # Renderer màu sắc ANSI, bảng mã CP437, khử giật màn hình
+├── DropSpeedController.h   # Quản lý tốc độ rơi tăng dần, level và điểm combo (SV5)
+├── test_speed.cpp          # Bộ kiểm thử tự động (Unit Test 6/6 test cases)
+├── Play_Game.bat           # Launcher 1-click tự động build và chạy
+└── README.md
 ```
 
-Nhờ vậy không bao giờ phải "lùi lại" khi đi sai.
+---
 
-**Mỗi ô vẽ bằng 2 ký tự.** Ký tự console cao gấp đôi bề ngang, nên `██` mới cho ra ô vuông.
-
-**Chỉ vẽ lại ô thay đổi.** `Renderer` nhớ màu đang hiển thị ở từng ô; mỗi vòng lặp chỉ ghi những ô khác đi, nên màn hình không nhấp nháy như khi dùng `system("cls")`.
-
-## 5. Việc còn trống — gợi ý chia cho nhóm
-
-| Việc | File | Trạng thái |
-|---|---|---|
-| **Xóa hàng đầy** | `Board::removeFullLines()` | ⬜ Đang `return 0` — có hướng dẫn trong chú thích |
-| **Tính điểm, đếm hàng, lên cấp** | `Game::onLinesCleared()` | ⬜ Mới cộng số hàng |
-| **Tăng tốc theo cấp độ** | `Game::fallDelayMs()` | ⬜ Đang cố định 500 ms |
-| Khối bóng (ghost piece) | `Renderer::draw()` | ⬜ Chưa có |
-| Xoay ngược chiều + bảng wall kick SRS | `Tetromino`, `Game::tryRotate()` | 🟨 Đã có xoay xuôi + đẩy lệch ±2 cột |
-| Giữ khối (Hold) | `Game`, `Renderer` | ⬜ Chưa có |
-| Lưu điểm cao ra file | lớp mới `HighScore` | ⬜ Chưa có |
-
-Lưu ý so với gợi ý phân công tuần 2 của giảng viên: bản này **đã có** khối vuông vức (việc của SV3) và xoay cơ bản (việc của SV4). Nhóm có thể giao SV3 làm khối bóng và giao diện, SV4 làm xoay ngược chiều + SRS.
-
-### Quy ước git gợi ý
-
-- Mỗi việc một nhánh: `feature/remove-line`, `feature/score-level`, `feature/ghost-piece`, `feature/rotate-srs`, `feature/hold`, `feature/high-score`, `fix/...`
-- Nhánh `main` luôn biên dịch được; trưởng nhóm review rồi mới merge.
-- Commit nhỏ, mô tả rõ: `Board: xoa hang day va dich cac hang phia tren xuong`.
-
-## 6. Ghi chú kỹ thuật
-
-- Chuẩn **C++14**. Đã biên dịch không cảnh báo bằng g++ 14 (`-Wall -Wextra -pedantic -Wshadow -Wconversion`) và clang++ 22.
-- Game đổi bảng mã console sang **437** để có ký tự khối `█` và khung viền, thoát game thì trả lại bảng mã cũ.
-- Console không có màu cam nên khối **L dùng vàng đậm**.
-- Chỉ chạy trên Windows (dùng `<windows.h>` và `<conio.h>`).
+<p align="center">
+  <b>Làm với ❤️ và rất nhiều ván thua bởi nhóm Hidden Gem, UIT</b><br>
+  <i>Bạn trụ được bao nhiêu hàng? 👀</i>
+</p>
