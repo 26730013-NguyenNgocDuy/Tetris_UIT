@@ -84,7 +84,7 @@ Chỗ gọi chỉ cầm con trỏ `Blocks *current` và gọi `current->rotate()
 
 ## 🚀 Cài đặt và chơi ngay
 
-> 🍎 **macOS / Linux**: chạy `./play.sh` (hoặc `g++ -std=c++11 main.cpp -o tetris && ./tetris`). `Platform.h` tự thay `<windows.h>`/`<conio.h>` bằng termios và mã màu ANSI.
+> 🍎 **macOS / Linux**: chạy `./play.sh` (hoặc `g++ -std=c++11 main.cpp Blocks.cpp BlockTypes.cpp Board.cpp Bag7.cpp -o tetris && ./tetris`). `Platform.h` tự thay `<windows.h>`/`<conio.h>` bằng termios và mã màu ANSI.
 
 **1. Tải source về**
 
@@ -102,7 +102,7 @@ cd Tetris_UIT
 - **🖥️ Cách 2: Chơi bản C++ Console (Minh chứng môn OOP)**
   - Với **MinGW / g++**:
   ```bash
-  g++ -O2 main.cpp -o tetris.exe
+  g++ -O2 main.cpp Blocks.cpp BlockTypes.cpp Board.cpp Bag7.cpp -o tetris.exe
   ./tetris.exe
   ```
   - Hoặc click đúp file **`Play_Game.bat`** để tự động build và chạy ngay trong 1 click!
