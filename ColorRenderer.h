@@ -3,10 +3,11 @@
 
 #include <iostream>
 #include <string>
+#include <fstream>
 #include "Platform.h"
 
 /**
- * @brief Bảng màu Console chuẩn Windows
+ * @brief Bảng màu Console chuẩn Windows và ANSI
  */
 enum ConsoleColor {
     COLOR_BLACK         = 0,
@@ -28,15 +29,7 @@ enum ConsoleColor {
 };
 
 /**
- * @brief Class OOP ColorRenderer - Quản lý màu sắc và render giao diện chuẩn hình mẫu báo cáo 3.3
- * 
- * Thành phần giao diện:
- * 1: Khung bàn chơi chính (10x20 tiêu chuẩn)
- * 2: Khối gạch đang rơi (Active Tetrimino)
- * 3: Ghost Piece (Bóng khối rơi dự đoán vị trí tiếp đất)
- * 4: Khung "GIỮ" (Hold Piece)
- * 5: Khung "TIẾP THEO" (Next Pieces)
- * 6: Khung thông số "ĐIỂM", "CẤP ĐỘ", "SỐ HÀNG"
+ * @brief Class OOP ColorRenderer - Quản lý màu sắc và giao diện chuẩn Tetris Web Pro
  */
 class ColorRenderer {
 public:
@@ -57,6 +50,10 @@ public:
     }
 
     static void setupConsole() {
+        // Thiết lập mã UTF-8 cho Windows Console để hiển thị khối và viền mượt mà
+        SetConsoleOutputCP(65001);
+        SetConsoleCP(65001);
+
         HANDLE consoleHandle = GetStdHandle(STD_OUTPUT_HANDLE);
         CONSOLE_CURSOR_INFO info;
         info.dwSize = 100;
@@ -67,12 +64,11 @@ public:
 #else
     // macOS / Linux: dùng mã màu ANSI thay cho Windows Console API
     static void setColor(int textColor, int bgColor = COLOR_BLACK) {
-        // Thứ tự bit màu của Windows (B,G,R) khác ANSI (R,G,B)
         static const int winToAnsi[8] = {0, 4, 2, 6, 1, 5, 3, 7};
         int fg = (textColor & 8 ? 90 : 30) + winToAnsi[textColor & 7];
         std::cout << "\033[" << fg;
         if (bgColor == COLOR_BLACK)
-            std::cout << ";49";  // Giữ nền mặc định của terminal
+            std::cout << ";49";
         else
             std::cout << ";" << (bgColor & 8 ? 100 : 40) + winToAnsi[bgColor & 7];
         std::cout << "m";
@@ -87,56 +83,88 @@ public:
     }
 
     static void setupConsole() {
-        // Xóa màn hình và ẩn con trỏ
         std::cout << "\033[2J\033[H\033[?25l" << std::flush;
     }
 #endif
 
     /**
-     * @brief Màu sắc chuẩn của từng khối Tetrimino theo quy chuẩn Tetris quốc tế
+     * @brief Màu sắc chuẩn của từng khối Tetrimino theo quy chuẩn Tetris Guidelines (giống Web)
      */
     static int getCharColor(char ch) {
         switch (ch) {
-            case 'I': return COLOR_CYAN;         // Cyan - Khối dài I
-            case 'O': return COLOR_YELLOW;       // Vàng - Khối vuông O
-            case 'T': return COLOR_MAGENTA;      // Tím hồng - Khối chữ T
-            case 'S': return COLOR_GREEN;        // Xanh lá - Khối chữ S
-            case 'Z': return COLOR_RED;          // Đỏ - Khối chữ Z
-            case 'J': return COLOR_BLUE;         // Xanh dương - Khối chữ J
-            case 'L': return COLOR_DARK_YELLOW;  // Cam/Vàng sẫm - Khối chữ L
+            case 'I': return COLOR_CYAN;         // I: Cyan (#06b6d4)
+            case 'O': return COLOR_YELLOW;       // O: Yellow (#eab308)
+            case 'T': return COLOR_MAGENTA;      // T: Purple/Magenta (#a855f7)
+            case 'S': return COLOR_GREEN;        // S: Green (#22c55e)
+            case 'Z': return COLOR_RED;          // Z: Red (#ef4444)
+            case 'J': return COLOR_BLUE;         // J: Blue (#3b82f6)
+            case 'L': return COLOR_DARK_YELLOW;  // L: Orange (#f97316)
             case '#': return COLOR_DARK_CYAN;    // Viền tường
-            case '+': return COLOR_DARK_GRAY;    // Ghost piece (bóng dự đoán tiếp đất)
+            case '+': return COLOR_DARK_GRAY;    // Ghost piece (bóng mờ)
             default:  return COLOR_WHITE;
         }
     }
 
     /**
-     * @brief In 1 ô tế bào với màu sắc và tỷ lệ vuông vức 1:1
+     * @brief In 1 ô tế bào với tỷ lệ 1:1 chuẩn xác theo giao diện Web
+     * @param ch Ký tự đại diện cho ô (I, O, T, S, Z, J, L, #, +, ' ')
+     * @param isPlayfield True nếu ô nằm trong lòng sân chơi (để vẽ lưới chấm mờ)
      */
-    static void printCell(char ch) {
+    static void printCell(char ch, bool isPlayfield = false) {
         if (ch == ' ') {
-            std::cout << "  ";
+            if (isPlayfield) {
+                // Lưới sân chơi chấm mờ như đường grid của canvas Web
+                setColor(COLOR_DARK_GRAY);
+                std::cout << " .";
+                resetColor();
+            } else {
+                std::cout << "  ";
+            }
             return;
         }
 
         if (ch == '+') {
-            // Ghost piece: đường nét thanh dự đoán vị trí rơi
+            // Ghost piece: đổ bóng dạng lưới thanh lịch dự đoán vị trí rơi
             setColor(COLOR_DARK_GRAY);
             std::cout << "::";
             resetColor();
             return;
         }
 
-        int color = getCharColor(ch);
-        setColor(color);
-
         if (ch == '#') {
-            std::cout << "##";
-        } else {
+            setColor(COLOR_DARK_CYAN);
             std::cout << "[]";
+            resetColor();
+            return;
         }
 
+        int color = getCharColor(ch);
+        setColor(color);
+        // Khối vuông rực rỡ vuông vức 1:1
+        std::cout << "[]";
         resetColor();
+    }
+
+    /**
+     * @brief Quản lý High Score (Đọc và ghi file highscore.dat giống localStorage của Web)
+     */
+    static int getHighScore() {
+        std::ifstream file("highscore.dat");
+        int hs = 0;
+        if (file >> hs) {
+            return hs;
+        }
+        return 0;
+    }
+
+    static void setHighScore(int newScore) {
+        int currentHs = getHighScore();
+        if (newScore > currentHs) {
+            std::ofstream file("highscore.dat");
+            if (file) {
+                file << newScore;
+            }
+        }
     }
 };
 

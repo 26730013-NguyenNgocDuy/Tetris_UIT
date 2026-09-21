@@ -1,7 +1,7 @@
 #ifndef BOARD_H
 #define BOARD_H
 
-#include "Tetromino.h"
+#include "Blocks.h"
 
 /**
  * @brief Sân chơi: phần tường bao quanh và mọi ô gạch đã nằm yên.
@@ -36,11 +36,11 @@ public:
 
     // Khối dịch đi (dx, dy) thì có còn nằm trong tường và không chạm ô đã có
     // gạch hay không
-    bool canPlace(const Tetromino &piece, int dx, int dy) const;
+    bool canPlace(const Blocks &piece, int dx, int dy) const;
 
     // Ghi khối vào lưới, hoặc xoá các ô mà khối đang chiếm
-    void place(const Tetromino &piece);
-    void erase(const Tetromino &piece);
+    void place(const Blocks &piece);
+    void erase(const Blocks &piece);
 
     // Xoá hàng tách làm hai bước để bên gọi chèn được hiệu ứng nháy ở giữa
     bool isRowFull(int row) const;

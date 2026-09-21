@@ -63,13 +63,20 @@ Mỗi hàng phá được làm gạch rơi nhanh thêm **30 ms**. Phá 4 hàng m
 | :--: | --------- |
 | `A` | ⬅️ Sang trái |
 | `D` | ➡️ Sang phải |
-| `W` | 🔄 Xoay khối |
-| `S` | ⬇️ Đẩy khối xuống nhanh hơn |
-| `Space` | ⏬ Thả xuống đáy ngay |
-| `C` | 📦 Giữ khối (mỗi khối một lần) |
-| `P` | ⏸️ Tạm dừng, bấm lần nữa để chơi tiếp |
-| `R` | 🔁 Chơi lại sau khi thua |
+| `X` | ⬇️ Đẩy khối xuống nhanh hơn |
 | `Q` | 🚪 Thoát game |
+
+### Xoay khối bằng tính đa hình
+
+`Blocks` là lớp cơ sở trừu tượng, `rotate()` là hàm thuần ảo, mỗi loại khối xoay một kiểu:
+
+| Lớp | Khi xoay |
+| --- | --- |
+| `BlockO` | Không đổi gì, hình vuông xoay vẫn vậy |
+| `BlockI` | Đổi qua lại nằm ngang và dựng đứng, đúng 2 trạng thái |
+| `BlockT`, `BlockS`, `BlockZ`, `BlockJ`, `BlockL` | Xoay 90 độ, đủ 4 trạng thái |
+
+Chỗ gọi chỉ cầm con trỏ `Blocks *current` và gọi `current->rotate()`, không cần biết đang là khối gì.
 
 > 💡 Nhớ tắt **Caps Lock** và chuyển bộ gõ sang **tiếng Anh**, không thì game sẽ không nhận phím đâu!
 
@@ -77,7 +84,7 @@ Mỗi hàng phá được làm gạch rơi nhanh thêm **30 ms**. Phá 4 hàng m
 
 ## 🚀 Cài đặt và chơi ngay
 
-> 🍎 **macOS / Linux**: chạy `./play.sh` (hoặc `g++ -std=c++11 main.cpp -o tetris && ./tetris`). `Platform.h` tự thay `<windows.h>`/`<conio.h>` bằng termios và mã màu ANSI.
+> 🍎 **macOS / Linux**: chạy `./play.sh` (hoặc `g++ -std=c++11 main.cpp Blocks.cpp BlockTypes.cpp Board.cpp Bag7.cpp -o tetris && ./tetris`). `Platform.h` tự thay `<windows.h>`/`<conio.h>` bằng termios và mã màu ANSI.
 
 **1. Tải source về**
 
@@ -88,14 +95,17 @@ cd Tetris_UIT
 
 **2. Biên dịch & Chơi game**
 
-Với **MinGW / g++**:
+- **🌐 Cách 1: Chơi ngay trên Trình Duyệt Web (Khuyên Dùng khi Báo Cáo / Trình Chiếu)**
+  - Nhấp đúp vào **`Play_Web.bat`** hoặc mở trực tiếp [dist_web/index.html](file:///dist_web/index.html).
+  - Giao diện Light/Dark sắc nét, chuẩn Canvas 60 FPS, âm thanh Polyphonic Web Audio, hỗ trợ đầy đủ phím và cảm ứng Mobile!
 
-```bash
-g++ -O2 main.cpp -o tetris.exe
-./tetris.exe
-```
-
-Hoặc click đúp file **`Play_Game.bat`** để tự động build và chạy ngay trong 1 click!
+- **🖥️ Cách 2: Chơi bản C++ Console (Minh chứng môn OOP)**
+  - Với **MinGW / g++**:
+  ```bash
+  g++ -O2 main.cpp Blocks.cpp BlockTypes.cpp Board.cpp Bag7.cpp -o tetris.exe
+  ./tetris.exe
+  ```
+  - Hoặc click đúp file **`Play_Game.bat`** để tự động build và chạy ngay trong 1 click!
 
 **3. Chạy kiểm thử tự động (Unit Test)**
 
@@ -131,42 +141,17 @@ g++ -O2 test_speed.cpp -o test_speed.exe
 
 ```
 Tetris_UIT/
-├── main.cpp                # Chỉ tạo đối tượng Game rồi chạy
-├── Game.h / Game.cpp       # Điều khiển ván chơi, sở hữu mọi thành phần bên dưới
-├── GameState.h / .cpp      # Lớp trừu tượng GameState + PlayingState, PausedState, GameOverState
+├── main.cpp                # Vòng lặp game, giao diện, điều khiển
+├── Blocks.h / Blocks.cpp   # Lớp trừu tượng cho một khối: hình dạng, vị trí, hàm xoay ảo
+├── BlockTypes.h / .cpp     # Bảy lớp con: BlockI, BlockO, BlockT, BlockS, BlockZ, BlockJ, BlockL
 ├── Board.h / Board.cpp     # Sân chơi: lưới, va chạm, đặt khối, xoá hàng
-├── Tetromino.h / .cpp      # Một khối: hình dạng, loại, vị trí, phép xoay
 ├── Bag7.h / Bag7.cpp       # Túi 7 khối, phát khối không bị trùng liên tục
-├── Renderer.h / .cpp       # Vẽ sân chơi và ba khung GIỮ, ĐIỂM, TIẾP THEO
-├── Input.h / Input.cpp     # Đọc phím, trả về hành động
 ├── ColorRenderer.h         # Renderer màu sắc ANSI, bảng mã CP437, khử giật màn hình
 ├── DropSpeedController.h   # Quản lý tốc độ rơi tăng dần, level và điểm combo (SV5)
-├── Platform.h              # Lớp tương thích Windows / macOS / Linux
 ├── test_speed.cpp          # Bộ kiểm thử tự động (Unit Test 6/6 test cases)
 ├── Play_Game.bat           # Launcher 1-click tự động build và chạy
 └── README.md
 ```
-
-### Sơ đồ lớp rút gọn
-
-```
-        GameState (lớp trừu tượng)
-        ├── PlayingState      ← khối rơi, nhận phím điều khiển
-        ├── PausedState       ← đứng yên, chờ bấm P
-        └── GameOverState     ← hiện điểm, chờ bấm R
-
-        Game ◆── Board, Tetromino, Bag7, Renderer, Input, DropSpeedController
-             └── GameState *state   (đa hình: state->update() chạy khác nhau)
-```
-
-Bốn tính chất OOP trong dự án:
-
-| Tính chất | Thể hiện ở đâu |
-| --- | --- |
-| Đóng gói | `grid` của `Board`, `shape` của `Tetromino`, `pieces` của `Bag7` đều `private` |
-| Trừu tượng | `GameState` không tạo được đối tượng, chỉ quy định ba việc lớp con phải làm |
-| Kế thừa | `PlayingState`, `PausedState`, `GameOverState` kế thừa `GameState` |
-| Đa hình | `state->handle()`, `state->update()`, `state->draw()` chạy đúng phiên bản của trạng thái hiện tại |
 
 ---
 

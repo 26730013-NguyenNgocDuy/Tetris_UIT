@@ -41,18 +41,18 @@ void Board::set(int row, int col, char value)
         grid[row][col] = value;
 }
 
-void Board::place(const Tetromino &piece)
+void Board::place(const Blocks &piece)
 {
-    for (int i = 0; i < Tetromino::SIZE; i++)
-        for (int j = 0; j < Tetromino::SIZE; j++)
+    for (int i = 0; i < Blocks::SIZE; i++)
+        for (int j = 0; j < Blocks::SIZE; j++)
             if (piece.isFilled(i, j))
                 set(piece.getY() + i, piece.getX() + j, piece.at(i, j));
 }
 
-void Board::erase(const Tetromino &piece)
+void Board::erase(const Blocks &piece)
 {
-    for (int i = 0; i < Tetromino::SIZE; i++)
-        for (int j = 0; j < Tetromino::SIZE; j++)
+    for (int i = 0; i < Blocks::SIZE; i++)
+        for (int j = 0; j < Blocks::SIZE; j++)
             if (piece.isFilled(i, j))
                 set(piece.getY() + i, piece.getX() + j, EMPTY);
 }
@@ -76,10 +76,10 @@ void Board::removeRow(int row)
         grid[1][c] = EMPTY;
 }
 
-bool Board::canPlace(const Tetromino &piece, int dx, int dy) const
+bool Board::canPlace(const Blocks &piece, int dx, int dy) const
 {
-    for (int i = 0; i < Tetromino::SIZE; i++)
-        for (int j = 0; j < Tetromino::SIZE; j++)
+    for (int i = 0; i < Blocks::SIZE; i++)
+        for (int j = 0; j < Blocks::SIZE; j++)
         {
             if (!piece.isFilled(i, j))
                 continue;
