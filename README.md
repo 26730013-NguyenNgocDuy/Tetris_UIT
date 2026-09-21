@@ -66,13 +66,25 @@ Mỗi hàng phá được làm gạch rơi nhanh thêm **30 ms**. Phá 4 hàng m
 | `X` | ⬇️ Đẩy khối xuống nhanh hơn |
 | `Q` | 🚪 Thoát game |
 
+### Xoay khối bằng tính đa hình
+
+`Blocks` là lớp cơ sở trừu tượng, `rotate()` là hàm thuần ảo, mỗi loại khối xoay một kiểu:
+
+| Lớp | Khi xoay |
+| --- | --- |
+| `BlockO` | Không đổi gì, hình vuông xoay vẫn vậy |
+| `BlockI` | Đổi qua lại nằm ngang và dựng đứng, đúng 2 trạng thái |
+| `BlockT`, `BlockS`, `BlockZ`, `BlockJ`, `BlockL` | Xoay 90 độ, đủ 4 trạng thái |
+
+Chỗ gọi chỉ cầm con trỏ `Blocks *current` và gọi `current->rotate()`, không cần biết đang là khối gì.
+
 > 💡 Nhớ tắt **Caps Lock** và chuyển bộ gõ sang **tiếng Anh**, không thì game sẽ không nhận phím đâu!
 
 ---
 
 ## 🚀 Cài đặt và chơi ngay
 
-> 🍎 **macOS / Linux**: chạy `./play.sh` (hoặc `g++ -std=c++11 main.cpp -o tetris && ./tetris`). `Platform.h` tự thay `<windows.h>`/`<conio.h>` bằng termios và mã màu ANSI.
+> 🍎 **macOS / Linux**: chạy `./play.sh` (hoặc `g++ -std=c++11 main.cpp Blocks.cpp BlockTypes.cpp Board.cpp Bag7.cpp -o tetris && ./tetris`). `Platform.h` tự thay `<windows.h>`/`<conio.h>` bằng termios và mã màu ANSI.
 
 **1. Tải source về**
 
@@ -90,7 +102,7 @@ cd Tetris_UIT
 - **🖥️ Cách 2: Chơi bản C++ Console (Minh chứng môn OOP)**
   - Với **MinGW / g++**:
   ```bash
-  g++ -O2 main.cpp -o tetris.exe
+  g++ -O2 main.cpp Blocks.cpp BlockTypes.cpp Board.cpp Bag7.cpp -o tetris.exe
   ./tetris.exe
   ```
   - Hoặc click đúp file **`Play_Game.bat`** để tự động build và chạy ngay trong 1 click!
@@ -129,7 +141,11 @@ g++ -O2 test_speed.cpp -o test_speed.exe
 
 ```
 Tetris_UIT/
-├── main.cpp                # Vòng lặp game, bàn chơi, điều khiển, xoay khối, giao diện
+├── main.cpp                # Vòng lặp game, giao diện, điều khiển
+├── Blocks.h / Blocks.cpp   # Lớp trừu tượng cho một khối: hình dạng, vị trí, hàm xoay ảo
+├── BlockTypes.h / .cpp     # Bảy lớp con: BlockI, BlockO, BlockT, BlockS, BlockZ, BlockJ, BlockL
+├── Board.h / Board.cpp     # Sân chơi: lưới, va chạm, đặt khối, xoá hàng
+├── Bag7.h / Bag7.cpp       # Túi 7 khối, phát khối không bị trùng liên tục
 ├── ColorRenderer.h         # Renderer màu sắc ANSI, bảng mã CP437, khử giật màn hình
 ├── DropSpeedController.h   # Quản lý tốc độ rơi tăng dần, level và điểm combo (SV5)
 ├── test_speed.cpp          # Bộ kiểm thử tự động (Unit Test 6/6 test cases)

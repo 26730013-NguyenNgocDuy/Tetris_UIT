@@ -6,152 +6,67 @@
 #include "Platform.h"
 #include "DropSpeedController.h"
 #include "ColorRenderer.h"
+#include "Blocks.h"
+#include "BlockTypes.h"
+#include "Board.h"
+#include "Bag7.h"
 
 using namespace std;
 
-#define H 20
-#define W 12
+// Kích thước lấy từ hằng số của lớp Board, không dùng #define nữa
+const int H = Board::ROWS;
+const int W = Board::COLS;
 
 // Bàn cờ chính 20x12 (với 2 cột viền và 10 cột trong sân chơi chuẩn Tetris)
-char board[H][W] = {};
+Board board;
 
-int x, y, b;
+// Khối đang rơi. Dùng con trỏ lớp cha để gọi được hàm xoay riêng của từng loại
+// khối (đa hình). Con trỏ này do main sở hữu nên phải tự xoá khi thay khối.
+Blocks *current = 0;
 int holdBlock = -1;
 bool canHold = true;
 int nextQueue[4];
 
-// Định nghĩa 7 loại khối Tetrimino chuẩn quốc tế (4x4)
-char blocks[7][4][4] = {
-    // 0: Khối I
-    {{' ', ' ', ' ', ' '},
-     {'I', 'I', 'I', 'I'},
-     {' ', ' ', ' ', ' '},
-     {' ', ' ', ' ', ' '}},
-    // 1: Khối O
-    {{' ', ' ', ' ', ' '},
-     {' ', 'O', 'O', ' '},
-     {' ', 'O', 'O', ' '},
-     {' ', ' ', ' ', ' '}},
-    // 2: Khối T
-    {{' ', ' ', ' ', ' '},
-     {' ', 'T', ' ', ' '},
-     {'T', 'T', 'T', ' '},
-     {' ', ' ', ' ', ' '}},
-    // 3: Khối S
-    {{' ', ' ', ' ', ' '},
-     {' ', 'S', 'S', ' '},
-     {'S', 'S', ' ', ' '},
-     {' ', ' ', ' ', ' '}},
-    // 4: Khối Z
-    {{' ', ' ', ' ', ' '},
-     {'Z', 'Z', ' ', ' '},
-     {' ', 'Z', 'Z', ' '},
-     {' ', ' ', ' ', ' '}},
-    // 5: Khối J
-    {{' ', ' ', ' ', ' '},
-     {'J', ' ', ' ', ' '},
-     {'J', 'J', 'J', ' '},
-     {' ', ' ', ' ', ' '}},
-    // 6: Khối L
-    {{' ', ' ', ' ', ' '},
-     {' ', ' ', 'L', ' '},
-     {'L', 'L', 'L', ' '},
-     {' ', ' ', ' ', ' '}}
-};
+// Nguồn phát khối: mỗi túi có đủ 7 loại nên không bị trùng liên tục như rand() % 7
+Bag7 bag;
 
-char cur[4][4];
-
-bool canMove(int dx, int dy, char piece[4][4], int px, int py)
+bool canMove(int dx, int dy, const Blocks &piece)
 {
-    for (int i = 0; i < 4; i++)
-    {
-        for (int j = 0; j < 4; j++)
-        {
-            if (piece[i][j] != ' ')
-            {
-                int xt = px + j + dx;
-                int yt = py + i + dy;
-                if (xt < 1 || xt >= W - 1 || yt >= H - 1)
-                    return false;
-                if (yt >= 0 && board[yt][xt] != ' ')
-                    return false;
-            }
-        }
-    }
-    return true;
+    return board.canPlace(piece, dx, dy);
 }
 
 bool canMove(int dx, int dy)
 {
-    return canMove(dx, dy, cur, x, y);
+    return board.canPlace(*current, dx, dy);
 }
 
 void rotate()
 {
-    char old[4][4], tmp[4][4];
-    for (int i = 0; i < 4; i++)
-    {
-        for (int j = 0; j < 4; j++)
-        {
-            old[i][j] = cur[i][j];
-            tmp[i][j] = cur[3 - j][i];
-        }
-    }
-    for (int i = 0; i < 4; i++)
-        for (int j = 0; j < 4; j++)
-            cur[i][j] = tmp[i][j];
+    // ĐA HÌNH: clone() trả về bản sao đúng loại khối, rotate() xoay theo kiểu
+    // riêng của loại đó. Chỗ này không cần biết đang cầm khối gì.
+    Blocks *turned = current->clone();
+    turned->rotate();
 
     // Wall kick: thử các độ lệch 0, -1, 1, -2, 2
     int kick[5] = {0, -1, 1, -2, 2};
     for (int k = 0; k < 5; k++)
     {
-        if (canMove(kick[k], 0))
+        if (canMove(kick[k], 0, *turned))
         {
-            x += kick[k];
+            turned->move(kick[k], 0);
+            delete current;      // nhận bản đã xoay, bỏ bản cũ
+            current = turned;
             return;
         }
     }
 
-    // Không thể xoay -> trả lại trạng thái cũ
-    for (int i = 0; i < 4; i++)
-        for (int j = 0; j < 4; j++)
-            cur[i][j] = old[i][j];
-}
-
-void block2Board()
-{
-    for (int i = 0; i < 4; i++)
-        for (int j = 0; j < 4; j++)
-            if (cur[i][j] != ' ')
-                if (y + i >= 0 && y + i < H && x + j >= 0 && x + j < W)
-                    board[y + i][x + j] = cur[i][j];
-}
-
-void boardDelBlock()
-{
-    for (int i = 0; i < 4; i++)
-        for (int j = 0; j < 4; j++)
-            if (cur[i][j] != ' ')
-                if (y + i >= 0 && y + i < H && x + j >= 0 && x + j < W)
-                    board[y + i][x + j] = ' ';
-}
-
-void initBoard()
-{
-    for (int i = 0; i < H; i++)
-        for (int j = 0; j < W; j++)
-        {
-            if (i == 0 || i == H - 1 || j == 0 || j == W - 1)
-                board[i][j] = '#';
-            else
-                board[i][j] = ' ';
-        }
+    delete turned;               // không đặt vừa chỗ nào thì bỏ bản sao
 }
 
 int getGhostY()
 {
-    int gy = y;
-    while (canMove(0, gy - y + 1))
+    int gy = current->getY();
+    while (canMove(0, gy - current->getY() + 1))
     {
         gy++;
     }
@@ -162,51 +77,52 @@ void initQueue()
 {
     for (int i = 0; i < 4; i++)
     {
-        nextQueue[i] = rand() % 7;
+        nextQueue[i] = bag.next();
     }
 }
 
 void spawn(int blockId = -1)
 {
+    int type;
     if (blockId == -1)
     {
-        b = nextQueue[0];
+        type = nextQueue[0];
         for (int i = 0; i < 3; i++)
         {
             nextQueue[i] = nextQueue[i + 1];
         }
-        nextQueue[3] = rand() % 7;
+        nextQueue[3] = bag.next();
     }
     else
     {
-        b = blockId;
+        type = blockId;
     }
 
-    for (int i = 0; i < 4; i++)
-        for (int j = 0; j < 4; j++)
-            cur[i][j] = blocks[b][i][j];
-
-    x = 4;
-    y = 0;
+    // Tạo đúng lớp con tương ứng với loại khối
+    delete current;
+    current = createBlock(type, 4, 0);
     canHold = true;
 }
 
 void holdPiece()
 {
     if (!canHold) return;
-    canHold = false;
-    boardDelBlock();
+    board.erase(*current);
     if (holdBlock == -1)
     {
-        holdBlock = b;
+        holdBlock = current->getType();
         spawn(-1);
     }
     else
     {
         int temp = holdBlock;
-        holdBlock = b;
+        holdBlock = current->getType();
         spawn(temp);
     }
+
+    // Đặt sau spawn(), vì spawn() bật lại canHold cho khối mới. Nếu đặt trước
+    // thì mỗi khối giữ được bao nhiêu lần cũng được, sai luật.
+    canHold = false;
 }
 
 DropSpeedController speedController;
@@ -230,19 +146,20 @@ void draw(bool showPauseModal = false, bool showGameOverModal = false)
     char displayBoard[H][W];
     for (int r = 0; r < H; r++)
         for (int c = 0; c < W; c++)
-            displayBoard[r][c] = board[r][c];
+            displayBoard[r][c] = board.at(r, c);
 
     // Vẽ ghost piece (nếu chưa chạm đất)
-    if (ghostY > y)
+    if (ghostY > current->getY())
     {
         for (int i = 0; i < 4; i++)
         {
             for (int j = 0; j < 4; j++)
             {
-                if (cur[i][j] != ' ' && ghostY + i < H - 1 && x + j > 0 && x + j < W - 1)
+                int c = current->getX() + j;
+                if (current->isFilled(i, j) && ghostY + i < H - 1 && c > 0 && c < W - 1)
                 {
-                    if (displayBoard[ghostY + i][x + j] == ' ')
-                        displayBoard[ghostY + i][x + j] = '+';
+                    if (displayBoard[ghostY + i][c] == ' ')
+                        displayBoard[ghostY + i][c] = '+';
                 }
             }
         }
@@ -253,9 +170,10 @@ void draw(bool showPauseModal = false, bool showGameOverModal = false)
     {
         for (int j = 0; j < 4; j++)
         {
-            if (cur[i][j] != ' ' && y + i >= 0 && y + i < H && x + j >= 0 && x + j < W)
+            int r = current->getY() + i, c = current->getX() + j;
+            if (current->isFilled(i, j) && r >= 0 && r < H && c >= 0 && c < W)
             {
-                displayBoard[y + i][x + j] = cur[i][j];
+                displayBoard[r][c] = current->at(i, j);
             }
         }
     }
@@ -293,7 +211,7 @@ void draw(bool showPauseModal = false, bool showGameOverModal = false)
             ColorRenderer::resetColor();
             for (int pj = 0; pj < 4; pj++)
             {
-                char ch = (holdBlock != -1) ? blocks[holdBlock][pi][pj] : ' ';
+                char ch = (holdBlock != -1) ? Blocks::shapeAt(holdBlock, pi, pj) : ' ';
                 ColorRenderer::printCell(ch, false);
             }
             ColorRenderer::setColor(COLOR_DARK_CYAN);
@@ -409,7 +327,7 @@ void draw(bool showPauseModal = false, bool showGameOverModal = false)
             ColorRenderer::resetColor();
             for (int pj = 0; pj < 4; pj++)
             {
-                char ch = blocks[pId][pi][pj];
+                char ch = Blocks::shapeAt(pId, pi, pj);
                 ColorRenderer::printCell(ch, false);
             }
             ColorRenderer::setColor(COLOR_DARK_CYAN);
@@ -553,25 +471,12 @@ int removeLine()
 
     for (int i = H - 2; i > 0; i--)
     {
-        int j;
-        for (j = 1; j < W - 1; j++)
-            if (board[i][j] == ' ')
-                break;
-
-        if (j == W - 1)
+        if (board.isRowFull(i))
         {
             clearedCount++;
+            board.removeRow(i);
 
-            // Kéo các dòng phía trên xuống
-            for (int ii = i; ii > 1; ii--)
-                for (int jj = 1; jj < W - 1; jj++)
-                    board[ii][jj] = board[ii - 1][jj];
-
-            // Xóa dòng trên cùng
-            for (int jj = 1; jj < W - 1; jj++)
-                board[1][jj] = ' ';
-
-            // Kiểm tra lại dòng hiện tại
+            // Kiểm tra lại dòng hiện tại vì dòng trên vừa rơi xuống
             i++;
 
             draw();
@@ -617,7 +522,7 @@ int main()
     ColorRenderer::setupConsole();
 
 restart_game_session:
-    initBoard();
+    board.reset();
     initQueue();
     spawn(-1);
     speedController = DropSpeedController();
@@ -627,7 +532,7 @@ restart_game_session:
     int dropTimer = 0;
 
     // Gắn khối ban đầu vào bàn cờ và vẽ frame khởi động
-    block2Board();
+    board.place(*current);
     draw();
 
     while (1)
@@ -653,23 +558,23 @@ restart_game_session:
                 continue;
             }
 
-            boardDelBlock();
+            board.erase(*current);
 
             if ((c == 'a' || c == 'A') && canMove(-1, 0))
             {
-                x--;
+                current->move(-1, 0);
                 moved = true;
             }
             else if ((c == 'd' || c == 'D') && canMove(1, 0))
             {
-                x++;
+                current->move(1, 0);
                 moved = true;
             }
             else if (c == 's' || c == 'S') // Soft drop
             {
                 if (canMove(0, 1))
                 {
-                    y++;
+                    current->move(0, 1);
                     dropTimer = 0;
                     moved = true;
                 }
@@ -688,18 +593,18 @@ restart_game_session:
             {
                 while (canMove(0, 1))
                 {
-                    y++;
+                    current->move(0, 1);
                 }
                 moved = true;
                 dropTimer = speedController.getDropInterval();
             }
             else if (c == 'q' || c == 'Q')
             {
-                block2Board();
+                board.place(*current);
                 goto game_quit;
             }
 
-            block2Board();
+            board.place(*current);
         }
 
         if (isGamePaused)
@@ -713,18 +618,18 @@ restart_game_session:
         if (dropTimer >= speedController.getDropInterval())
         {
             dropTimer = 0;
-            boardDelBlock();
+            board.erase(*current);
 
             if (canMove(0, 1))
             {
-                y++;
+                current->move(0, 1);
                 moved = true;
-                block2Board();
+                board.place(*current);
             }
             else
             {
                 // Khối đã chạm đáy -> Khóa vào bàn cờ
-                block2Board();
+                board.place(*current);
 
                 // Xóa hàng đầy nếu có
                 int cleared = removeLine();
@@ -759,7 +664,7 @@ restart_game_session:
                     }
                 }
 
-                block2Board();
+                board.place(*current);
                 moved = true;
             }
         }
@@ -775,6 +680,8 @@ restart_game_session:
 
 game_quit:
     ColorRenderer::setHighScore(speedController.getScore());
+    delete current;
+    current = 0;
     ColorRenderer::gotoxy(0, 26);
     cout << "\nCam on ban da trai nghiem Tetris Pro Max!\n";
 
