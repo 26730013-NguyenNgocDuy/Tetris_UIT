@@ -15,6 +15,7 @@ Game::Game()
     current = 0;
     dropTimer = 0;
     changed = true;
+    justDropped = false;
 
     board.reset();
     fillQueue();
@@ -157,6 +158,7 @@ void Game::hardDrop()
     applyGravity();
     dropTimer = 0;
     changed = true;
+    justDropped = true;
 }
 
 void Game::tick()
@@ -264,6 +266,15 @@ void Game::run()
         while (action != ACTION_NONE && pending == 0 && running)
         {
             state->handle(action);
+
+            // Vừa thả khối: bỏ các phím còn tồn, khối mới xuất hiện đúng chỗ
+            if (justDropped)
+            {
+                justDropped = false;
+                input.discardPending();
+                break;
+            }
+
             action = (pending == 0) ? input.poll() : ACTION_NONE;
         }
         state->update();

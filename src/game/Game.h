@@ -74,6 +74,7 @@ private:
     bool over;             // đã thua chưa
     int dropTimer;         // số mili giây đã trôi từ lần rơi trước
     bool changed;          // có gì đổi cần vẽ lại không
+    bool justDropped;      // vừa thả khối bằng phím cách trong nhịp này
 
     GameState *state;      // trạng thái hiện tại, Game sở hữu và tự xoá
     GameState *pending;    // trạng thái sắp chuyển sang, chờ hết nhịp
