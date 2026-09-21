@@ -78,10 +78,11 @@ public:
     }
 
     /**
-     * @brief Bonus score for soft dropping / hard dropping
+     * @brief Chi cong diem khi co hang bien mat (an hang)
      */
     void addDropScore(int points) {
-        if (points > 0) score += points;
+        // Vo hieu hoa: Diem so chi duoc tinh khi o/hang bien mat (onLinesCleared)
+        (void)points;
     }
 
     int getDropInterval() const {
