@@ -542,8 +542,8 @@ void draw(bool showPauseModal = false, bool showGameOverModal = false)
 
     // Dòng hướng dẫn phím bấm phía dưới (ngắn gọn, chống tràn buffer)
     ColorRenderer::setColor(COLOR_DARK_GRAY);
-    cout << "\n  [A/D]: Trai/Phai   [W]: Xoay       [S]: Roi nhanh\033[K\n";
-    cout << "  [SPACE]: Tha ngay  [C]: Giu khoi   [P]: Tam dung   [Q]: Thoat\033[K\n";
+    cout << "\n  [< / >] hoac [A/D]: Trai/Phai   [^/W]: Xoay    [v/S]: Xuong\033[K\n";
+    cout << "  [SPACE]: Tha ngay  [C]: Giu khoi [P]: Tam dung  [Q]: Thoat\033[K\n";
     ColorRenderer::resetColor();
 }
 
@@ -582,6 +582,35 @@ int removeLine()
     return clearedCount;
 }
 
+// Hàm đọc phím thông minh hỗ trợ cả ký tự thường (A/D/W/S) lẫn phím Mũi Tên (Arrow Keys)
+int readInputKey()
+{
+    int c = getch();
+#ifdef _WIN32
+    if (c == 0 || c == 224 || c == -32)
+    {
+        int ext = getch();
+        if (ext == 72) return 'w';      // Mũi tên Lên -> Xoay khối
+        if (ext == 80) return 's';      // Mũi tên Xuống -> Rơi nhanh (Soft drop)
+        if (ext == 75) return 'a';      // Mũi tên Trái -> Di chuyển sang trái
+        if (ext == 77) return 'd';      // Mũi tên Phải -> Di chuyển sang phải
+    }
+#else
+    if (c == 27) // ANSI Escape Sequence cho phím mũi tên trên Linux/macOS
+    {
+        if (kbhit() && getch() == '[')
+        {
+            int ext = getch();
+            if (ext == 'A') return 'w'; // Up
+            if (ext == 'B') return 's'; // Down
+            if (ext == 'D') return 'a'; // Left
+            if (ext == 'C') return 'd'; // Right
+        }
+    }
+#endif
+    return c;
+}
+
 int main()
 {
     srand(static_cast<unsigned int>(time(0)));
@@ -608,7 +637,7 @@ restart_game_session:
         // 1. Đọc phím liên tục không nghẽn luồng (Non-blocking input)
         while (kbhit())
         {
-            char c = getch();
+            int c = readInputKey();
 
             if (c == 'p' || c == 'P')
             {
