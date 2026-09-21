@@ -107,7 +107,6 @@ void spawn(int blockId = -1)
 void holdPiece()
 {
     if (!canHold) return;
-    canHold = false;
     board.erase(*current);
     if (holdBlock == -1)
     {
@@ -120,6 +119,10 @@ void holdPiece()
         holdBlock = current->getType();
         spawn(temp);
     }
+
+    // Đặt sau spawn(), vì spawn() bật lại canHold cho khối mới. Nếu đặt trước
+    // thì mỗi khối giữ được bao nhiêu lần cũng được, sai luật.
+    canHold = false;
 }
 
 DropSpeedController speedController;
