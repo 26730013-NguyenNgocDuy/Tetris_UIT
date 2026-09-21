@@ -365,6 +365,31 @@ void draw()
         else if (row == 17)
         {
             ColorRenderer::setColor(COLOR_DARK_CYAN);
+            cout << "| ";
+            ColorRenderer::setColor(COLOR_CYAN);
+            cout << "NHIP ROI   ";
+            ColorRenderer::setColor(COLOR_DARK_CYAN);
+            cout << "|  ";
+            ColorRenderer::resetColor();
+        }
+        else if (row == 18)
+        {
+            ColorRenderer::setColor(COLOR_DARK_CYAN);
+            cout << "| ";
+            ColorRenderer::setColor(COLOR_MAGENTA);
+            string speedStr = to_string(speedController.getDropInterval()) + "ms";
+            if (speedController.getComboStreak() > 1)
+            {
+                speedStr += " x" + to_string(speedController.getComboStreak());
+            }
+            cout << setw(10) << left << speedStr;
+            ColorRenderer::setColor(COLOR_DARK_CYAN);
+            cout << " |  ";
+            ColorRenderer::resetColor();
+        }
+        else if (row == 19)
+        {
+            ColorRenderer::setColor(COLOR_DARK_CYAN);
             cout << "+------------+  ";
             ColorRenderer::resetColor();
         }
@@ -535,9 +560,11 @@ int main()
             // Xóa line
             int cleared = removeLine();
 
-            // Tăng tốc độ nếu có line bị xóa
+            // Tăng tốc độ nếu có line bị xóa, hoặc reset combo nếu không ăn line
             if (cleared > 0)
                 speedController.onLinesCleared(cleared);
+            else
+                speedController.resetCombo();
 
             // Spawn block mới
             spawn(-1);
