@@ -8,11 +8,13 @@
 #include "ColorRenderer.h"
 #include "Tetromino.h"
 #include "Board.h"
+#include "Bag7.h"
 
 using namespace std;
 
-#define H 20
-#define W 12
+// Kích thước lấy từ hằng số của lớp Board, không dùng #define nữa
+const int H = Board::ROWS;
+const int W = Board::COLS;
 
 // Bàn cờ chính 20x12 (với 2 cột viền và 10 cột trong sân chơi chuẩn Tetris)
 Board board;
@@ -23,29 +25,17 @@ int holdBlock = -1;
 bool canHold = true;
 int nextQueue[4];
 
+// Nguồn phát khối: mỗi túi có đủ 7 loại nên không bị trùng liên tục như rand() % 7
+Bag7 bag;
+
 bool canMove(int dx, int dy, const Tetromino &piece)
 {
-    for (int i = 0; i < 4; i++)
-    {
-        for (int j = 0; j < 4; j++)
-        {
-            if (piece.isFilled(i, j))
-            {
-                int xt = piece.getX() + j + dx;
-                int yt = piece.getY() + i + dy;
-                if (xt < 1 || xt >= W - 1 || yt >= H - 1)
-                    return false;
-                if (yt >= 0 && !board.isEmpty(yt, xt))
-                    return false;
-            }
-        }
-    }
-    return true;
+    return board.canPlace(piece, dx, dy);
 }
 
 bool canMove(int dx, int dy)
 {
-    return canMove(dx, dy, current);
+    return board.canPlace(current, dx, dy);
 }
 
 void rotate()
@@ -66,28 +56,6 @@ void rotate()
     }
 }
 
-void block2Board()
-{
-    for (int i = 0; i < 4; i++)
-        for (int j = 0; j < 4; j++)
-            if (current.isFilled(i, j))
-            {
-                int r = current.getY() + i, c = current.getX() + j;
-                board.set(r, c, current.at(i, j));
-            }
-}
-
-void boardDelBlock()
-{
-    for (int i = 0; i < 4; i++)
-        for (int j = 0; j < 4; j++)
-            if (current.isFilled(i, j))
-            {
-                int r = current.getY() + i, c = current.getX() + j;
-                board.set(r, c, Board::EMPTY);
-            }
-}
-
 int getGhostY()
 {
     int gy = current.getY();
@@ -102,7 +70,7 @@ void initQueue()
 {
     for (int i = 0; i < 4; i++)
     {
-        nextQueue[i] = rand() % 7;
+        nextQueue[i] = bag.next();
     }
 }
 
@@ -116,7 +84,7 @@ void spawn(int blockId = -1)
         {
             nextQueue[i] = nextQueue[i + 1];
         }
-        nextQueue[3] = rand() % 7;
+        nextQueue[3] = bag.next();
     }
     else
     {
@@ -131,7 +99,7 @@ void holdPiece()
 {
     if (!canHold) return;
     canHold = false;
-    boardDelBlock();
+    board.erase(current);
     if (holdBlock == -1)
     {
         holdBlock = current.getType();
@@ -403,25 +371,12 @@ int removeLine()
 
     for (int i = H - 2; i > 0; i--)
     {
-        int j;
-        for (j = 1; j < W - 1; j++)
-            if (board.isEmpty(i, j))
-                break;
-
-        if (j == W - 1)
+        if (board.isRowFull(i))
         {
             clearedCount++;
+            board.removeRow(i);
 
-            // Kéo các dòng phía trên xuống
-            for (int ii = i; ii > 1; ii--)
-                for (int jj = 1; jj < W - 1; jj++)
-                    board.set(ii, jj, board.at(ii - 1, jj));
-
-            // Xóa dòng trên cùng
-            for (int jj = 1; jj < W - 1; jj++)
-                board.set(1, jj, Board::EMPTY);
-
-            // Kiểm tra lại dòng hiện tại
+            // Kiểm tra lại dòng hiện tại vì dòng trên vừa rơi xuống
             i++;
 
             draw();
@@ -443,7 +398,7 @@ int main()
 
     while (1)
     {
-        boardDelBlock();
+        board.erase(current);
 
         if (kbhit())
         {
@@ -492,7 +447,7 @@ int main()
         else
         {
             // Block đã chạm đáy
-            block2Board();
+            board.place(current);
 
             // Xóa line
             int cleared = removeLine();
@@ -518,7 +473,7 @@ int main()
             }
         }
 
-        block2Board();
+        board.place(current);
 
         draw();
 
