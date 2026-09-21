@@ -1,10 +1,8 @@
 #include <iostream>
 #include <cstdlib>
 #include <ctime>
-#include <vector>
 #include <iomanip>
 #include <chrono>
-#include "Platform.h"
 #include "DropSpeedController.h"
 #include "ColorRenderer.h"
 
