@@ -268,6 +268,7 @@ void Renderer::draw(const Board &board, const Tetromino &current, int ghostY,
 
     // Dòng hướng dẫn phím bấm phía dưới
     ColorRenderer::setColor(COLOR_DARK_GRAY);
-    cout << "\n[A/D]: Trai/Phai  [W]: Xoay  [S]: Roi nhanh  [SPACE]: Tha ngay  [C]: Giu  [Q]: Thoat\n";
+    cout << "\n[A/D]: Trai/Phai  [W]: Xoay  [S]: Roi nhanh  [SPACE]: Tha ngay  [C]: Giu"
+            "  [P]: Tam dung  [R]: Choi lai  [Q]: Thoat\n";
     ColorRenderer::resetColor();
 }
