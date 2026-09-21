@@ -6,7 +6,8 @@
 #include "Platform.h"
 #include "DropSpeedController.h"
 #include "ColorRenderer.h"
-#include "Tetromino.h"
+#include "Blocks.h"
+#include "BlockTypes.h"
 #include "Board.h"
 #include "Bag7.h"
 
@@ -19,8 +20,9 @@ const int W = Board::COLS;
 // Bàn cờ chính 20x12 (với 2 cột viền và 10 cột trong sân chơi chuẩn Tetris)
 Board board;
 
-// Khối đang rơi: hình dạng, loại và vị trí đều nằm trong đối tượng này
-Tetromino current;
+// Khối đang rơi. Dùng con trỏ lớp cha để gọi được hàm xoay riêng của từng loại
+// khối (đa hình). Con trỏ này do main sở hữu nên phải tự xoá khi thay khối.
+Blocks *current = 0;
 int holdBlock = -1;
 bool canHold = true;
 int nextQueue[4];
@@ -28,38 +30,43 @@ int nextQueue[4];
 // Nguồn phát khối: mỗi túi có đủ 7 loại nên không bị trùng liên tục như rand() % 7
 Bag7 bag;
 
-bool canMove(int dx, int dy, const Tetromino &piece)
+bool canMove(int dx, int dy, const Blocks &piece)
 {
     return board.canPlace(piece, dx, dy);
 }
 
 bool canMove(int dx, int dy)
 {
-    return board.canPlace(current, dx, dy);
+    return board.canPlace(*current, dx, dy);
 }
 
 void rotate()
 {
-    // Xoay trên một bản sao, chỉ nhận khi bản sao đặt vừa vào bàn cờ
-    Tetromino turned = current.rotated();
+    // ĐA HÌNH: clone() trả về bản sao đúng loại khối, rotate() xoay theo kiểu
+    // riêng của loại đó. Chỗ này không cần biết đang cầm khối gì.
+    Blocks *turned = current->clone();
+    turned->rotate();
 
     // Wall kick: thử các độ lệch 0, -1, 1, -2, 2
     int kick[5] = {0, -1, 1, -2, 2};
     for (int k = 0; k < 5; k++)
     {
-        if (canMove(kick[k], 0, turned))
+        if (canMove(kick[k], 0, *turned))
         {
-            turned.move(kick[k], 0);
+            turned->move(kick[k], 0);
+            delete current;      // nhận bản đã xoay, bỏ bản cũ
             current = turned;
             return;
         }
     }
+
+    delete turned;               // không đặt vừa chỗ nào thì bỏ bản sao
 }
 
 int getGhostY()
 {
-    int gy = current.getY();
-    while (canMove(0, gy - current.getY() + 1))
+    int gy = current->getY();
+    while (canMove(0, gy - current->getY() + 1))
     {
         gy++;
     }
@@ -91,7 +98,9 @@ void spawn(int blockId = -1)
         type = blockId;
     }
 
-    current = Tetromino(type, 4, 0);
+    // Tạo đúng lớp con tương ứng với loại khối
+    delete current;
+    current = createBlock(type, 4, 0);
     canHold = true;
 }
 
@@ -99,16 +108,16 @@ void holdPiece()
 {
     if (!canHold) return;
     canHold = false;
-    board.erase(current);
+    board.erase(*current);
     if (holdBlock == -1)
     {
-        holdBlock = current.getType();
+        holdBlock = current->getType();
         spawn(-1);
     }
     else
     {
         int temp = holdBlock;
-        holdBlock = current.getType();
+        holdBlock = current->getType();
         spawn(temp);
     }
 }
@@ -129,14 +138,14 @@ void draw()
             displayBoard[r][c] = board.at(r, c);
 
     // Vẽ ghost piece (nếu chưa chạm đất)
-    if (ghostY > current.getY())
+    if (ghostY > current->getY())
     {
         for (int i = 0; i < 4; i++)
         {
             for (int j = 0; j < 4; j++)
             {
-                int c = current.getX() + j;
-                if (current.isFilled(i, j) && ghostY + i < H - 1 && c > 0 && c < W - 1)
+                int c = current->getX() + j;
+                if (current->isFilled(i, j) && ghostY + i < H - 1 && c > 0 && c < W - 1)
                 {
                     if (displayBoard[ghostY + i][c] == ' ')
                         displayBoard[ghostY + i][c] = '+';
@@ -150,10 +159,10 @@ void draw()
     {
         for (int j = 0; j < 4; j++)
         {
-            int r = current.getY() + i, c = current.getX() + j;
-            if (current.isFilled(i, j) && r >= 0 && r < H && c >= 0 && c < W)
+            int r = current->getY() + i, c = current->getX() + j;
+            if (current->isFilled(i, j) && r >= 0 && r < H && c >= 0 && c < W)
             {
-                displayBoard[r][c] = current.at(i, j);
+                displayBoard[r][c] = current->at(i, j);
             }
         }
     }
@@ -188,7 +197,7 @@ void draw()
             ColorRenderer::resetColor();
             for (int pj = 0; pj < 4; pj++)
             {
-                char ch = (holdBlock != -1) ? Tetromino::shapeAt(holdBlock, pi, pj) : ' ';
+                char ch = (holdBlock != -1) ? Blocks::shapeAt(holdBlock, pi, pj) : ' ';
                 ColorRenderer::printCell(ch);
             }
             ColorRenderer::setColor(COLOR_DARK_CYAN);
@@ -338,7 +347,7 @@ void draw()
             ColorRenderer::resetColor();
             for (int pj = 0; pj < 4; pj++)
             {
-                char ch = Tetromino::shapeAt(pId, blockRow, pj);
+                char ch = Blocks::shapeAt(pId, blockRow, pj);
                 ColorRenderer::printCell(ch);
             }
             ColorRenderer::setColor(COLOR_DARK_CYAN);
@@ -398,23 +407,23 @@ int main()
 
     while (1)
     {
-        board.erase(current);
+        board.erase(*current);
 
         if (kbhit())
         {
             char c = getch();
 
             if (c == 'a' && canMove(-1, 0))
-                current.move(-1, 0);
+                current->move(-1, 0);
 
             if (c == 'd' && canMove(1, 0))
-                current.move(1, 0);
+                current->move(1, 0);
 
             if (c == 's')
             {
                 if (canMove(0, 1))
                 {
-                    current.move(0, 1);
+                    current->move(0, 1);
                     speedController.addDropScore(1);
                 }
             }
@@ -430,7 +439,7 @@ int main()
                 int dropDist = 0;
                 while (canMove(0, 1))
                 {
-                    current.move(0, 1);
+                    current->move(0, 1);
                     dropDist++;
                 }
                 speedController.addDropScore(dropDist * 2);
@@ -442,12 +451,12 @@ int main()
 
         if (canMove(0, 1))
         {
-            current.move(0, 1);
+            current->move(0, 1);
         }
         else
         {
             // Block đã chạm đáy
-            board.place(current);
+            board.place(*current);
 
             // Xóa line
             int cleared = removeLine();
@@ -473,7 +482,7 @@ int main()
             }
         }
 
-        board.place(current);
+        board.place(*current);
 
         draw();
 

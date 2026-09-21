@@ -1,7 +1,7 @@
 #ifndef BAG7_H
 #define BAG7_H
 
-#include "Tetromino.h"
+#include "Blocks.h"
 
 /**
  * @brief Cách random chuẩn của Tetris: một túi chứa đủ bảy loại khối.
@@ -20,10 +20,10 @@ public:
     Bag7();
 
     int next();                          // loại khối kế tiếp
-    int remaining() const { return Tetromino::TYPE_COUNT - position; }
+    int remaining() const { return Blocks::TYPE_COUNT - position; }
 
 private:
-    int pieces[Tetromino::TYPE_COUNT];   // bảy loại khối đã xáo
+    int pieces[Blocks::TYPE_COUNT];   // bảy loại khối đã xáo
     int position;                        // vị trí khối sắp phát
 
     void refill();                       // bỏ lại đủ bảy loại rồi xáo
