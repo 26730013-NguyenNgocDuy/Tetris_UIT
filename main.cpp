@@ -7,6 +7,7 @@
 #include "DropSpeedController.h"
 #include "ColorRenderer.h"
 #include "Tetromino.h"
+#include "Board.h"
 
 using namespace std;
 
@@ -14,7 +15,7 @@ using namespace std;
 #define W 12
 
 // Bàn cờ chính 20x12 (với 2 cột viền và 10 cột trong sân chơi chuẩn Tetris)
-char board[H][W] = {};
+Board board;
 
 // Khối đang rơi: hình dạng, loại và vị trí đều nằm trong đối tượng này
 Tetromino current;
@@ -34,7 +35,7 @@ bool canMove(int dx, int dy, const Tetromino &piece)
                 int yt = piece.getY() + i + dy;
                 if (xt < 1 || xt >= W - 1 || yt >= H - 1)
                     return false;
-                if (yt >= 0 && board[yt][xt] != ' ')
+                if (yt >= 0 && !board.isEmpty(yt, xt))
                     return false;
             }
         }
@@ -72,8 +73,7 @@ void block2Board()
             if (current.isFilled(i, j))
             {
                 int r = current.getY() + i, c = current.getX() + j;
-                if (r >= 0 && r < H && c >= 0 && c < W)
-                    board[r][c] = current.at(i, j);
+                board.set(r, c, current.at(i, j));
             }
 }
 
@@ -84,21 +84,8 @@ void boardDelBlock()
             if (current.isFilled(i, j))
             {
                 int r = current.getY() + i, c = current.getX() + j;
-                if (r >= 0 && r < H && c >= 0 && c < W)
-                    board[r][c] = ' ';
+                board.set(r, c, Board::EMPTY);
             }
-}
-
-void initBoard()
-{
-    for (int i = 0; i < H; i++)
-        for (int j = 0; j < W; j++)
-        {
-            if (i == 0 || i == H - 1 || j == 0 || j == W - 1)
-                board[i][j] = '#';
-            else
-                board[i][j] = ' ';
-        }
 }
 
 int getGhostY()
@@ -171,7 +158,7 @@ void draw()
     char displayBoard[H][W];
     for (int r = 0; r < H; r++)
         for (int c = 0; c < W; c++)
-            displayBoard[r][c] = board[r][c];
+            displayBoard[r][c] = board.at(r, c);
 
     // Vẽ ghost piece (nếu chưa chạm đất)
     if (ghostY > current.getY())
@@ -418,7 +405,7 @@ int removeLine()
     {
         int j;
         for (j = 1; j < W - 1; j++)
-            if (board[i][j] == ' ')
+            if (board.isEmpty(i, j))
                 break;
 
         if (j == W - 1)
@@ -428,11 +415,11 @@ int removeLine()
             // Kéo các dòng phía trên xuống
             for (int ii = i; ii > 1; ii--)
                 for (int jj = 1; jj < W - 1; jj++)
-                    board[ii][jj] = board[ii - 1][jj];
+                    board.set(ii, jj, board.at(ii - 1, jj));
 
             // Xóa dòng trên cùng
             for (int jj = 1; jj < W - 1; jj++)
-                board[1][jj] = ' ';
+                board.set(1, jj, Board::EMPTY);
 
             // Kiểm tra lại dòng hiện tại
             i++;
@@ -450,7 +437,7 @@ int main()
     srand(static_cast<unsigned int>(time(0)));
     ColorRenderer::setupConsole();
 
-    initBoard();
+    board.reset();
     initQueue();
     spawn(-1);
 
