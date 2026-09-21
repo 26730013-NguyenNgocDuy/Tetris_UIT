@@ -1,5 +1,6 @@
 #include "Game.h"
 
+#include "BlockTypes.h"
 #include "ColorRenderer.h"
 #include "GameState.h"
 #include "Platform.h"
@@ -15,6 +16,9 @@ Game::Game()
     running = true;
     over = false;
     pending = 0;
+    current = 0;
+    dropTimer = 0;
+    changed = true;
 
     board.reset();
     fillQueue();
@@ -30,6 +34,7 @@ Game::~Game()
     // nên lệnh delete này gọi đúng hàm huỷ của lớp con.
     delete state;
     delete pending;
+    delete current;
 }
 
 void Game::setState(GameState *newState)
@@ -55,15 +60,17 @@ void Game::spawn(int type)
         nextQueue[3] = bag.next();
     }
 
-    current = Tetromino(type, 4, 0);
+    // Xoá khối cũ rồi tạo khối mới đúng lớp con tương ứng với loại
+    delete current;
+    current = createBlock(type, 4, 0);
     canHold = true;
 }
 
 int Game::ghostRow() const
 {
     // Thả thử khối xuống tới khi không xuống được nữa
-    int row = current.getY();
-    while (board.canPlace(current, 0, row - current.getY() + 1))
+    int row = current->getY();
+    while (board.canPlace(*current, 0, row - current->getY() + 1))
         row++;
     return row;
 }
@@ -71,39 +78,54 @@ int Game::ghostRow() const
 void Game::moveLeft()
 {
     if (canMove(-1, 0))
-        current.move(-1, 0);
+    {
+        current->move(-1, 0);
+        changed = true;
+    }
 }
 
 void Game::moveRight()
 {
     if (canMove(1, 0))
-        current.move(1, 0);
+    {
+        current->move(1, 0);
+        changed = true;
+    }
 }
 
 void Game::softDrop()
 {
+    // Chỉ cộng điểm khi xoá được hàng, nên rơi nhanh không được cộng điểm
     if (canMove(0, 1))
     {
-        current.move(0, 1);
-        speed.addDropScore(1);
+        current->move(0, 1);
+        dropTimer = 0;
+        changed = true;
     }
 }
 
 void Game::rotatePiece()
 {
-    // Xoay trên bản sao, thử lệch sang hai bên khi khối đang sát tường
-    Tetromino turned = current.rotated();
+    // ĐA HÌNH: clone() trả về bản sao đúng loại khối, rotate() xoay theo kiểu
+    // riêng của loại đó. Chỗ này không cần biết đang cầm khối gì.
+    Blocks *turned = current->clone();
+    turned->rotate();
+
     int kick[5] = {0, -1, 1, -2, 2};
 
     for (int k = 0; k < 5; k++)
     {
-        if (board.canPlace(turned, kick[k], 0))
+        if (board.canPlace(*turned, kick[k], 0))
         {
-            turned.move(kick[k], 0);
+            turned->move(kick[k], 0);
+            delete current;          // nhận bản đã xoay, bỏ bản cũ
             current = turned;
+            changed = true;
             return;
         }
     }
+
+    delete turned;                   // không chỗ nào đặt vừa thì bỏ bản sao
 }
 
 void Game::hold()
@@ -111,30 +133,56 @@ void Game::hold()
     if (!canHold)
         return;
 
-    canHold = false;
-
     if (holdType == -1)
     {
-        holdType = current.getType();
+        holdType = current->getType();
         spawn();
     }
     else
     {
         int keep = holdType;
-        holdType = current.getType();
+        holdType = current->getType();
         spawn(keep);
     }
+
+    // Đặt sau spawn(), vì spawn() bật lại canHold cho khối mới. Nếu đặt trước
+    // thì mỗi khối giữ được bao nhiêu lần cũng được, sai luật.
+    canHold = false;
+    changed = true;
 }
 
 void Game::hardDrop()
 {
-    int distance = 0;
     while (canMove(0, 1))
+        current->move(0, 1);
+
+    // Đồng hồ rơi đầy ngay, nên nhịp kế tiếp khối được chốt lại
+    dropTimer = speed.getDropInterval();
+    changed = true;
+}
+
+void Game::tick()
+{
+    dropTimer += TICK_MS;
+    if (dropTimer >= speed.getDropInterval())
     {
-        current.move(0, 1);
-        distance++;
+        dropTimer = 0;
+        applyGravity();
+        changed = true;
     }
-    speed.addDropScore(distance * 2);
+}
+
+void Game::drawIfChanged()
+{
+    if (!changed)
+        return;
+    drawPlayfield();
+    changed = false;
+}
+
+void Game::saveHighScore()
+{
+    ColorRenderer::setHighScore(speed.getScore());
 }
 
 int Game::clearFullRows()
@@ -152,7 +200,7 @@ int Game::clearFullRows()
             row++;
 
             drawPlayfield();
-            Sleep(120);
+            Sleep(80);
         }
     }
 
@@ -163,12 +211,12 @@ void Game::applyGravity()
 {
     if (canMove(0, 1))
     {
-        current.move(0, 1);
+        current->move(0, 1);
         return;
     }
 
     // Chạm đáy: chốt khối vào bàn cờ, xoá hàng đầy, tính điểm
-    board.place(current);
+    board.place(*current);
 
     int cleared = clearFullRows();
     if (cleared > 0)
@@ -188,7 +236,7 @@ void Game::drawPlayfield()
     // Khối đang rơi KHÔNG nằm trong bàn cờ, nó chỉ được vẽ đè lên khi hiển thị.
     // Nhờ vậy tính bóng mờ không bị khối va vào chính nó, và lúc thua cũng không
     // xoá nhầm gạch cũ ở chỗ khối mới đè lên.
-    renderer.draw(board, current, ghostRow(), holdType, nextQueue, speed);
+    renderer.draw(board, *current, ghostRow(), holdType, nextQueue, speed);
 }
 
 void Game::restart()
@@ -198,6 +246,8 @@ void Game::restart()
     holdType = -1;
     canHold = true;
     over = false;
+    dropTimer = 0;
+    changed = true;
     fillQueue();
     spawn();
 }
@@ -228,7 +278,7 @@ void Game::run()
             Sleep(nhip);
     }
 
-    ColorRenderer::gotoxy(0, 23);
-    cout << "\nNhan phim bat ky de thoat...";
-    getch();
+    saveHighScore();
+    ColorRenderer::gotoxy(0, 26);
+    cout << "\nCam on ban da trai nghiem Tetris Pro Max!\n";
 }

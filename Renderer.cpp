@@ -8,7 +8,7 @@
 
 using namespace std;
 
-// Kich thuoc lay tu lop Board
+// Kích thước lấy từ lớp Board
 const int H = Board::ROWS;
 const int W = Board::COLS;
 
@@ -25,10 +25,44 @@ void Renderer::showMessage(int x, int y, const string &text, int textColor, int 
     ColorRenderer::resetColor();
 }
 
-void Renderer::draw(const Board &board, const Tetromino &current, int ghostY,
+void Renderer::showPauseModal()
+{
+    ColorRenderer::gotoxy(20, 11);
+    ColorRenderer::setColor(COLOR_BLACK, COLOR_YELLOW);
+    cout << "  [!] TAM DUNG (PAUSED)  ";
+    ColorRenderer::gotoxy(20, 12);
+    cout << "   Nhan phim P tiep tuc  ";
+    ColorRenderer::resetColor();
+    
+}
+
+void Renderer::showGameOverModal(int score)
+{
+    ColorRenderer::gotoxy(20, 10);
+    ColorRenderer::setColor(COLOR_WHITE, COLOR_RED);
+    cout << "     GAME OVER      ";
+    ColorRenderer::gotoxy(20, 11);
+    ColorRenderer::setColor(COLOR_BLACK, COLOR_WHITE);
+    cout << "  Diem so: " << setw(10) << left << score << " ";
+    ColorRenderer::gotoxy(20, 12);
+    cout << "  [R]: Choi lai         ";
+    ColorRenderer::gotoxy(20, 13);
+    cout << "  [Q]: Thoat game       ";
+    ColorRenderer::resetColor();
+    
+}
+
+void Renderer::draw(const Board &board, const Blocks &current, int ghostY,
                     int holdBlock, const int nextQueue[], const DropSpeedController &stats)
 {
     ColorRenderer::gotoxy(0, 0);
+
+    // Banner Header phong cách UIT Pro Max
+    ColorRenderer::setColor(COLOR_CYAN);
+    cout << "  ============================================================\n";
+    cout << "    🎮 TETRIS PRO MAX 🎮 | UIT SS004 - NHOM HIDDEN GEM\n";
+    cout << "  ============================================================\n";
+    ColorRenderer::resetColor();
 
     char displayBoard[H][W];
     for (int r = 0; r < H; r++)
@@ -65,23 +99,26 @@ void Renderer::draw(const Board &board, const Tetromino &current, int ghostY,
         }
     }
 
-    // Dựng 20 dòng hoàn chỉnh kết hợp HUD bên trái và bên phải
+    int currentHighScore = ColorRenderer::getHighScore();
+    if (stats.getScore() > currentHighScore)
+        currentHighScore = stats.getScore();
+
+    // Dựng 20 dòng hoàn chỉnh kết hợp HUD bên trái và bên phải (Theo bản Web)
     for (int row = 0; row < H; row++)
     {
-        // ================= KHUNG BÊN TRÁI =================
-        // Dòng 0: Header GIỮ
+        // ================= PANEL BÊN TRÁI (HOLD, LEVEL, LINES) =================
         if (row == 0)
         {
             ColorRenderer::setColor(COLOR_DARK_CYAN);
-            cout << "+------------+  ";
+            cout << "  +------------+  ";
             ColorRenderer::resetColor();
         }
         else if (row == 1)
         {
             ColorRenderer::setColor(COLOR_DARK_CYAN);
-            cout << "| ";
+            cout << "  | ";
             ColorRenderer::setColor(COLOR_YELLOW);
-            cout << "GIU (C)    ";
+            cout << "HOLD (C)   ";
             ColorRenderer::setColor(COLOR_DARK_CYAN);
             cout << "|  ";
             ColorRenderer::resetColor();
@@ -91,12 +128,12 @@ void Renderer::draw(const Board &board, const Tetromino &current, int ghostY,
             // Hiển thị khối giữ trong 4 dòng
             int pi = row - 2;
             ColorRenderer::setColor(COLOR_DARK_CYAN);
-            cout << "|  ";
+            cout << "  |  ";
             ColorRenderer::resetColor();
             for (int pj = 0; pj < 4; pj++)
             {
-                char ch = (holdBlock != -1) ? Tetromino::shapeAt(holdBlock, pi, pj) : ' ';
-                ColorRenderer::printCell(ch);
+                char ch = (holdBlock != -1) ? Blocks::shapeAt(holdBlock, pi, pj) : ' ';
+                ColorRenderer::printCell(ch, false);
             }
             ColorRenderer::setColor(COLOR_DARK_CYAN);
             cout << "  |  ";
@@ -105,118 +142,86 @@ void Renderer::draw(const Board &board, const Tetromino &current, int ghostY,
         else if (row == 6)
         {
             ColorRenderer::setColor(COLOR_DARK_CYAN);
-            cout << "+------------+  ";
+            cout << "  +------------+  ";
+            ColorRenderer::resetColor();
+        }
+        else if (row == 8)
+        {
+            ColorRenderer::setColor(COLOR_DARK_CYAN);
+            cout << "  +------------+  ";
+            ColorRenderer::resetColor();
+        }
+        else if (row == 9)
+        {
+            ColorRenderer::setColor(COLOR_DARK_CYAN);
+            cout << "  | ";
+            ColorRenderer::setColor(COLOR_CYAN);
+            cout << "LEVEL      ";
+            ColorRenderer::setColor(COLOR_DARK_CYAN);
+            cout << "|  ";
             ColorRenderer::resetColor();
         }
         else if (row == 10)
         {
             ColorRenderer::setColor(COLOR_DARK_CYAN);
-            cout << "+------------+  ";
-            ColorRenderer::resetColor();
-        }
-        else if (row == 11)
-        {
-            ColorRenderer::setColor(COLOR_DARK_CYAN);
-            cout << "| ";
-            ColorRenderer::setColor(COLOR_CYAN);
-            cout << "DIEM       ";
-            ColorRenderer::setColor(COLOR_DARK_CYAN);
-            cout << "|  ";
-            ColorRenderer::resetColor();
-        }
-        else if (row == 12)
-        {
-            ColorRenderer::setColor(COLOR_DARK_CYAN);
-            cout << "| ";
-            ColorRenderer::setColor(COLOR_WHITE);
-            cout << setw(10) << left << stats.getScore();
-            ColorRenderer::setColor(COLOR_DARK_CYAN);
-            cout << " |  ";
-            ColorRenderer::resetColor();
-        }
-        else if (row == 13)
-        {
-            ColorRenderer::setColor(COLOR_DARK_CYAN);
-            cout << "| ";
-            ColorRenderer::setColor(COLOR_CYAN);
-            cout << "CAP DO     ";
-            ColorRenderer::setColor(COLOR_DARK_CYAN);
-            cout << "|  ";
-            ColorRenderer::resetColor();
-        }
-        else if (row == 14)
-        {
-            ColorRenderer::setColor(COLOR_DARK_CYAN);
-            cout << "| ";
+            cout << "  | ";
             ColorRenderer::setColor(COLOR_YELLOW);
             cout << setw(10) << left << stats.getLevel();
             ColorRenderer::setColor(COLOR_DARK_CYAN);
             cout << " |  ";
             ColorRenderer::resetColor();
         }
-        else if (row == 15)
+        else if (row == 11)
         {
             ColorRenderer::setColor(COLOR_DARK_CYAN);
-            cout << "| ";
+            cout << "  +------------+  ";
+            ColorRenderer::resetColor();
+        }
+        else if (row == 13)
+        {
+            ColorRenderer::setColor(COLOR_DARK_CYAN);
+            cout << "  +------------+  ";
+            ColorRenderer::resetColor();
+        }
+        else if (row == 14)
+        {
+            ColorRenderer::setColor(COLOR_DARK_CYAN);
+            cout << "  | ";
             ColorRenderer::setColor(COLOR_CYAN);
-            cout << "SO HANG    ";
+            cout << "LINES      ";
             ColorRenderer::setColor(COLOR_DARK_CYAN);
             cout << "|  ";
             ColorRenderer::resetColor();
         }
-        else if (row == 16)
+        else if (row == 15)
         {
             ColorRenderer::setColor(COLOR_DARK_CYAN);
-            cout << "| ";
+            cout << "  | ";
             ColorRenderer::setColor(COLOR_GREEN);
             cout << setw(10) << left << stats.getTotalLinesCleared();
             ColorRenderer::setColor(COLOR_DARK_CYAN);
             cout << " |  ";
             ColorRenderer::resetColor();
         }
-        else if (row == 17)
+        else if (row == 16)
         {
             ColorRenderer::setColor(COLOR_DARK_CYAN);
-            cout << "| ";
-            ColorRenderer::setColor(COLOR_CYAN);
-            cout << "NHIP ROI   ";
-            ColorRenderer::setColor(COLOR_DARK_CYAN);
-            cout << "|  ";
-            ColorRenderer::resetColor();
-        }
-        else if (row == 18)
-        {
-            ColorRenderer::setColor(COLOR_DARK_CYAN);
-            cout << "| ";
-            ColorRenderer::setColor(COLOR_MAGENTA);
-            string speedStr = to_string(stats.getDropInterval()) + "ms";
-            if (stats.getComboStreak() > 1)
-            {
-                speedStr += " x" + to_string(stats.getComboStreak());
-            }
-            cout << setw(10) << left << speedStr;
-            ColorRenderer::setColor(COLOR_DARK_CYAN);
-            cout << " |  ";
-            ColorRenderer::resetColor();
-        }
-        else if (row == 19)
-        {
-            ColorRenderer::setColor(COLOR_DARK_CYAN);
-            cout << "+------------+  ";
+            cout << "  +------------+  ";
             ColorRenderer::resetColor();
         }
         else
         {
-            cout << "                ";
+            cout << "                  ";
         }
 
-        // ================= SÂN CHƠI CHÍNH (BÀN CỜ) =================
+        // ================= SÂN CHƠI CHÍNH (BÀN CỜ 10x20 + 2 VIỀN) =================
         for (int col = 0; col < W; col++)
         {
-            ColorRenderer::printCell(displayBoard[row][col]);
+            bool isPlayfield = (col > 0 && col < W - 1);
+            ColorRenderer::printCell(displayBoard[row][col], isPlayfield);
         }
 
-        // ================= KHUNG BÊN PHẢI (TIẾP THEO) =================
+        // ================= PANEL BÊN PHẢI (NEXT, SCORE, HIGH SCORE, SPEED) =================
         if (row == 0)
         {
             ColorRenderer::setColor(COLOR_DARK_CYAN);
@@ -228,31 +233,112 @@ void Renderer::draw(const Board &board, const Tetromino &current, int ghostY,
             ColorRenderer::setColor(COLOR_DARK_CYAN);
             cout << "  | ";
             ColorRenderer::setColor(COLOR_YELLOW);
-            cout << "TIEP THEO  ";
+            cout << "NEXT       ";
             ColorRenderer::setColor(COLOR_DARK_CYAN);
             cout << "|";
             ColorRenderer::resetColor();
         }
-        else if (row >= 2 && row <= 17)
+        else if (row >= 2 && row <= 5)
         {
-            // Hiển thị 4 khối tiếp theo trong hàng đợi (mỗi khối chiếm 4 dòng)
-            int blockIdx = (row - 2) / 4;
-            int blockRow = (row - 2) % 4;
-            int pId = nextQueue[blockIdx];
-
+            // Hiển thị khối tiếp theo trong hàng đợi
+            int pi = row - 2;
+            int pId = nextQueue[0];
             ColorRenderer::setColor(COLOR_DARK_CYAN);
             cout << "  |  ";
             ColorRenderer::resetColor();
             for (int pj = 0; pj < 4; pj++)
             {
-                char ch = Tetromino::shapeAt(pId, blockRow, pj);
-                ColorRenderer::printCell(ch);
+                char ch = Blocks::shapeAt(pId, pi, pj);
+                ColorRenderer::printCell(ch, false);
             }
             ColorRenderer::setColor(COLOR_DARK_CYAN);
             cout << "  |";
             ColorRenderer::resetColor();
         }
+        else if (row == 6)
+        {
+            ColorRenderer::setColor(COLOR_DARK_CYAN);
+            cout << "  +------------+";
+            ColorRenderer::resetColor();
+        }
+        else if (row == 8)
+        {
+            ColorRenderer::setColor(COLOR_DARK_CYAN);
+            cout << "  +------------+";
+            ColorRenderer::resetColor();
+        }
+        else if (row == 9)
+        {
+            ColorRenderer::setColor(COLOR_DARK_CYAN);
+            cout << "  | ";
+            ColorRenderer::setColor(COLOR_CYAN);
+            cout << "SCORE      ";
+            ColorRenderer::setColor(COLOR_DARK_CYAN);
+            cout << "|";
+            ColorRenderer::resetColor();
+        }
+        else if (row == 10)
+        {
+            ColorRenderer::setColor(COLOR_DARK_CYAN);
+            cout << "  | ";
+            ColorRenderer::setColor(COLOR_WHITE);
+            cout << setw(10) << left << stats.getScore();
+            ColorRenderer::setColor(COLOR_DARK_CYAN);
+            cout << " |";
+            ColorRenderer::resetColor();
+        }
+        else if (row == 11)
+        {
+            ColorRenderer::setColor(COLOR_DARK_CYAN);
+            cout << "  +------------+";
+            ColorRenderer::resetColor();
+        }
+        else if (row == 13)
+        {
+            ColorRenderer::setColor(COLOR_DARK_CYAN);
+            cout << "  +------------+";
+            ColorRenderer::resetColor();
+        }
+        else if (row == 14)
+        {
+            ColorRenderer::setColor(COLOR_DARK_CYAN);
+            cout << "  | ";
+            ColorRenderer::setColor(COLOR_CYAN);
+            cout << "HIGH SCORE ";
+            ColorRenderer::setColor(COLOR_DARK_CYAN);
+            cout << "|";
+            ColorRenderer::resetColor();
+        }
+        else if (row == 15)
+        {
+            ColorRenderer::setColor(COLOR_DARK_CYAN);
+            cout << "  | ";
+            ColorRenderer::setColor(COLOR_YELLOW);
+            cout << setw(10) << left << currentHighScore;
+            ColorRenderer::setColor(COLOR_DARK_CYAN);
+            cout << " |";
+            ColorRenderer::resetColor();
+        }
+        else if (row == 16)
+        {
+            ColorRenderer::setColor(COLOR_DARK_CYAN);
+            cout << "  +------------+";
+            ColorRenderer::resetColor();
+        }
         else if (row == 18)
+        {
+            ColorRenderer::setColor(COLOR_DARK_CYAN);
+            cout << "  | ";
+            ColorRenderer::setColor(COLOR_MAGENTA);
+            string spd = to_string(stats.getDropInterval()) + "ms";
+            if (stats.getComboStreak() > 1)
+                spd += " x" + to_string(stats.getComboStreak());
+            cout << setw(10) << left << spd;
+            ColorRenderer::setColor(COLOR_DARK_CYAN);
+            cout << " |";
+            ColorRenderer::resetColor();
+        }
+        else if (row == 19)
         {
             ColorRenderer::setColor(COLOR_DARK_CYAN);
             cout << "  +------------+";
@@ -263,12 +349,12 @@ void Renderer::draw(const Board &board, const Tetromino &current, int ghostY,
             cout << "                ";
         }
 
-        cout << "\n";
+        cout << "\033[K\n";
     }
 
-    // Dòng hướng dẫn phím bấm phía dưới
+    // Dòng hướng dẫn phím bấm phía dưới (ngắn gọn, chống tràn buffer)
     ColorRenderer::setColor(COLOR_DARK_GRAY);
-    cout << "\n[A/D]: Trai/Phai  [W]: Xoay  [S]: Roi nhanh  [SPACE]: Tha ngay  [C]: Giu"
-            "  [P]: Tam dung  [R]: Choi lai  [Q]: Thoat\n";
+    cout << "\n  [< / >] hoac [A/D]: Trai/Phai   [^/W]: Xoay    [v/S]: Xuong\033[K\n";
+    cout << "  [SPACE]: Tha ngay  [C]: Giu khoi [P]: Tam dung  [Q]: Thoat\033[K\n";
     ColorRenderer::resetColor();
 }

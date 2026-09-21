@@ -5,7 +5,7 @@
 
 #include "Board.h"
 #include "DropSpeedController.h"
-#include "Tetromino.h"
+#include "Blocks.h"
 
 /**
  * @brief Lớp lo toàn bộ việc vẽ màn hình: sân chơi và ba khung thông tin.
@@ -22,11 +22,15 @@ class Renderer
 public:
     Renderer();   // chuẩn bị console: ẩn con trỏ, xoá màn hình
 
-    void draw(const Board &board, const Tetromino &current, int ghostY,
+    void draw(const Board &board, const Blocks &current, int ghostY,
               int holdBlock, const int nextQueue[], const DropSpeedController &stats);
 
-    // In một dòng chữ tại vị trí bất kỳ, dùng cho chữ TẠM DỪNG và THUA CUỘC
+    // In một dòng chữ tại vị trí bất kỳ
     void showMessage(int x, int y, const std::string &text, int textColor, int bgColor = 0);
+
+    // Hai khung hiện đè lên sân chơi khi tạm dừng và khi thua
+    void showPauseModal();
+    void showGameOverModal(int score);
 };
 
 #endif // RENDERER_H

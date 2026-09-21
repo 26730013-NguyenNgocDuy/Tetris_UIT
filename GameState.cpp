@@ -22,28 +22,34 @@ void PlayingState::handle(Action action)
 
 void PlayingState::update()
 {
-    game->applyGravity();
+    game->tick();
 
-    // Khối mới không còn chỗ đặt thì chuyển sang trạng thái thua cuộc
+    // Khối mới không còn chỗ đặt thì lưu điểm cao và chuyển sang thua cuộc
     if (game->isOver())
+    {
+        game->saveHighScore();
         game->setState(new GameOverState(game));
+    }
 }
 
 void PlayingState::draw()
 {
-    game->drawPlayfield();
+    game->drawIfChanged();   // chỉ vẽ lại khi có gì đổi, đỡ nháy màn hình
 }
 
 int PlayingState::tickMs() const
 {
-    return game->getDropInterval();
+    return Game::TICK_MS;
 }
 
 // ---------------------------------------------------------------- Tạm dừng
 void PausedState::handle(Action action)
 {
     if (action == ACTION_PAUSE)
-        game->setState(new PlayingState(game));   // bấm P lần nữa để chơi tiếp
+    {
+        game->markChanged();                       // vẽ lại để xoá khung tạm dừng
+        game->setState(new PlayingState(game));    // bấm P lần nữa để chơi tiếp
+    }
 
     if (action == ACTION_QUIT)
         game->quit();
@@ -60,7 +66,7 @@ void PausedState::draw()
         return;
 
     game->drawPlayfield();
-    game->getRenderer().showMessage(18, 10, "  TAM DUNG (P)  ", COLOR_BLACK, COLOR_YELLOW);
+    game->getRenderer().showPauseModal();
     painted = true;
 }
 
@@ -88,7 +94,7 @@ void GameOverState::draw()
         return;
 
     game->drawPlayfield();
-    game->getRenderer().showMessage(18, 10, "   GAME OVER!   ", COLOR_RED, COLOR_WHITE);
-    game->getRenderer().showMessage(14, 12, "  R: choi lai    Q: thoat  ", COLOR_WHITE);
+    game->getRenderer().showGameOverModal(game->getScore());
     painted = true;
 }
+

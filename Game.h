@@ -6,14 +6,14 @@
 #include "DropSpeedController.h"
 #include "Input.h"
 #include "Renderer.h"
-#include "Tetromino.h"
+#include "Blocks.h"
 
 class GameState;
 
 /**
  * @brief Lớp điều khiển ván chơi: giữ mọi thứ của game và chạy vòng lặp chính.
  *
- * TÍNH HỢP THÀNH (sở hữu): Game chứa Board, Tetromino, Bag7, DropSpeedController,
+ * TÍNH HỢP THÀNH (sở hữu): Game chứa Board, khối đang rơi, Bag7, DropSpeedController,
  * Renderer và Input làm thành phần. Chúng sinh ra và mất đi cùng với Game.
  *
  * Trước khi có lớp này, tất cả nằm rải rác thành biến toàn cục trong main.cpp,
@@ -22,6 +22,9 @@ class GameState;
 class Game
 {
 public:
+    // Mỗi nhịp vòng lặp dài 25 ms (40 lần mỗi giây) nên phím phản hồi ngay
+    static const int TICK_MS = 25;
+
     Game();
     ~Game();
 
@@ -41,17 +44,22 @@ public:
     void hold();
     void hardDrop();
 
+    void tick();                  // cộng đồng hồ rơi, đủ nhịp thì cho khối rơi một dòng
     void applyGravity();          // khối tự rơi một dòng, chạm đáy thì chốt lại
-    void drawPlayfield();         // vẽ sân chơi và ba khung thông tin
+    void drawPlayfield();         // vẽ sân chơi và các khung thông tin
+    void drawIfChanged();         // chỉ vẽ lại khi có gì đổi, đỡ nháy màn hình
+    void markChanged() { changed = true; }
+    void saveHighScore();         // ghi điểm cao ra file
     void restart();               // chơi lại từ đầu
     void quit() { running = false; }
 
     bool isOver() const { return over; }
     int getDropInterval() const { return speed.getDropInterval(); }
+    int getScore() const { return speed.getScore(); }
 
 private:
     Board board;
-    Tetromino current;
+    Blocks *current;       // khối đang rơi, Game sở hữu nên phải tự xoá
     Bag7 bag;
     DropSpeedController speed;
     Renderer renderer;
@@ -62,6 +70,8 @@ private:
     int nextQueue[4];      // bốn khối sắp tới
     bool running;          // còn chạy vòng lặp hay không
     bool over;             // đã thua chưa
+    int dropTimer;         // số mili giây đã trôi từ lần rơi trước
+    bool changed;          // có gì đổi cần vẽ lại không
 
     GameState *state;      // trạng thái hiện tại, Game sở hữu và tự xoá
     GameState *pending;    // trạng thái sắp chuyển sang, chờ hết nhịp
@@ -71,7 +81,7 @@ private:
     Game(const Game &);
     void operator = (const Game &);
 
-    bool canMove(int dx, int dy) const { return board.canPlace(current, dx, dy); }
+    bool canMove(int dx, int dy) const { return board.canPlace(*current, dx, dy); }
     int ghostRow() const;
     void fillQueue();
     void spawn(int type = -1);
