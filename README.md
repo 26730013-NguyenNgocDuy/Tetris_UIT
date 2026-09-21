@@ -81,25 +81,35 @@ git clone https://github.com/26730013-NguyenNgocDuy/Tetris_UIT.git
 cd Tetris_UIT
 ```
 
-**2. Biên dịch**
+**2. Biên dịch & Chơi game**
 
 Với **MinGW / g++**:
 
 ```bash
-g++ main.cpp -o tetris.exe
+g++ -O2 main.cpp -o tetris.exe
+./tetris.exe
 ```
 
-Hoặc với **Visual Studio** (mở *Developer Command Prompt*):
+Hoặc click đúp file **`Play_Game.bat`** để tự động build và chạy ngay trong 1 click!
+
+**3. Chạy kiểm thử tự động (Unit Test)**
+
+Để kiểm thử logic tốc độ rơi, combo và điểm số:
 
 ```bash
-cl /EHsc main.cpp /Fe:tetris.exe
+g++ -O2 test_speed.cpp -o test_speed.exe
+./test_speed.exe
 ```
 
-**3. Vào game!** 🎉
+---
 
-```bash
-tetris.exe
-```
+## ⚡ Cơ chế gia tốc & Điểm số (SV5)
+
+- **Tốc độ ban đầu**: `500ms` / bước rơi.
+- **Gia tốc**: Mỗi hàng xóa được giảm `25ms`.
+- **Cấp độ (Level)**: Tăng 1 cấp mỗi 10 hàng xóa được (`Level = 1 + TotalLines / 10`).
+- **Hệ số Combo**: Ăn hàng liên tiếp kích hoạt combo streak nhân điểm thưởng (`(combo - 1) * 50 * level`).
+- **Ngưỡng an toàn tối thiểu**: `80ms` (đảm bảo không bị giật lag hay rơi tức thời).
 
 ---
 
@@ -108,7 +118,7 @@ tetris.exe
 - 🧠 **Chừa một cột trống** sát tường để chờ khối thẳng rồi phá liền 4 hàng. Nhưng nhớ là phá xong thì gạch sẽ rơi nhanh hơn hẳn!
 - 🏔️ **Đừng xây núi ở giữa.** Gạch luôn xuất hiện gần giữa bàn, chồng cao ở đó là thua sớm.
 - 🐢 **Tận dụng lúc đầu game** để xếp gạch thật phẳng. Đây là lúc duy nhất bạn còn thời gian suy nghĩ.
-- 🧘 **Bình tĩnh.** Gạch rơi 100 ms một ô không đáng sợ bằng việc bạn luống cuống bấm nhầm phím.
+- 🧘 **Bình tĩnh.** Gạch rơi 80 ms một ô không đáng sợ bằng việc bạn luống cuống bấm nhầm phím.
 
 ---
 
@@ -116,8 +126,11 @@ tetris.exe
 
 ```
 Tetris_UIT/
-├── main.cpp                # Vòng lặp game, bàn chơi, điều khiển, phá hàng
-├── DropSpeedController.h   # Quản lý tốc độ rơi tăng dần theo số hàng đã phá
+├── main.cpp                # Vòng lặp game, bàn chơi, điều khiển, xoay khối, giao diện
+├── ColorRenderer.h         # Renderer màu sắc ANSI, bảng mã CP437, khử giật màn hình
+├── DropSpeedController.h   # Quản lý tốc độ rơi tăng dần, level và điểm combo (SV5)
+├── test_speed.cpp          # Bộ kiểm thử tự động (Unit Test 6/6 test cases)
+├── Play_Game.bat           # Launcher 1-click tự động build và chạy
 └── README.md
 ```
 
