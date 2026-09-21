@@ -1,0 +1,863 @@
+<!DOCTYPE html>
+<html lang="vi" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Tetris UIT Pro Max - ban web cua do an OOP nhom Hidden Gem, UIT.">
+<title>Tetris UIT Pro Max</title>
+<style>
+/* ===== Bang mau: doi theo data-theme tren the <html> ===== */
+:root {
+  --c-i: #22d3ee; --c-o: #fbbf24; --c-t: #c084fc; --c-s: #4ade80;
+  --c-z: #f87171; --c-j: #60a5fa; --c-l: #fb923c;
+  --radius: 14px;
+  --font: "Segoe UI", system-ui, -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --mono: "Cascadia Mono", Consolas, "SF Mono", ui-monospace, monospace;
+}
+:root[data-theme="dark"] {
+  --bg: #080c18; --bg2: #101829; --panel: #131c30; --panel2: #1b2740;
+  --line: #24314e; --text: #e8eeff; --dim: #8b9ac0; --accent: #22d3ee;
+  --grid: rgba(255,255,255,.055); --well: #0c1322; --shadow: 0 18px 44px rgba(0,0,0,.55);
+}
+:root[data-theme="light"] {
+  --bg: #eef1f8; --bg2: #ffffff; --panel: #ffffff; --panel2: #f3f6fc;
+  --line: #d8e0ef; --text: #16203a; --dim: #61708f; --accent: #0e8ea8;
+  --grid: rgba(20,30,60,.07); --well: #f7f9fd; --shadow: 0 14px 34px rgba(30,45,90,.14);
+}
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0; font-family: var(--font); color: var(--text);
+  background: radial-gradient(1200px 700px at 50% -10%, var(--bg2), var(--bg) 60%);
+  display: flex; flex-direction: column; align-items: center;
+  padding: 18px 16px 24px; gap: 14px;
+  -webkit-tap-highlight-color: transparent;
+}
+header { text-align: center; }
+h1 {
+  margin: 0; font-size: clamp(20px, 4.6vw, 30px); letter-spacing: .5px;
+  background: linear-gradient(92deg, var(--c-i), var(--c-t) 55%, var(--c-o));
+  -webkit-background-clip: text; background-clip: text; color: transparent;
+}
+header p { margin: 4px 0 0; color: var(--dim); font-size: 13px; }
+
+/* ===== Bo cuc: cot trai - san choi - cot phai ===== */
+.stage {
+  display: grid; grid-template-columns: 150px auto 150px;
+  gap: 14px; align-items: start;
+}
+.col { display: flex; flex-direction: column; gap: 12px; }
+.card {
+  background: var(--panel); border: 1px solid var(--line);
+  border-radius: var(--radius); padding: 10px 12px; box-shadow: var(--shadow);
+}
+.card h2 {
+  margin: 0 0 8px; font-size: 11px; letter-spacing: 1.6px; text-transform: uppercase;
+  color: var(--dim); font-weight: 700;
+}
+.value { font-family: var(--mono); font-size: 25px; font-weight: 700; line-height: 1.1; }
+.value.small { font-size: 18px; }
+.sub { margin-top: 3px; font-size: 11px; color: var(--dim); font-family: var(--mono); }
+.combo { color: var(--c-o); }
+
+.well {
+  position: relative; background: var(--well); border: 1px solid var(--line);
+  border-radius: var(--radius); padding: 10px; box-shadow: var(--shadow);
+}
+#board { display: block; border-radius: 8px; touch-action: none; }
+#hold, #next { display: block; width: 100%; height: auto; }
+
+/* ===== Lop phu: tam dung / thua / man chao ===== */
+.overlay {
+  position: absolute; inset: 0; display: none; flex-direction: column;
+  align-items: center; justify-content: center; gap: 10px; text-align: center;
+  border-radius: var(--radius); padding: 18px;
+  background: color-mix(in srgb, var(--well) 84%, transparent);
+  backdrop-filter: blur(3px);
+}
+.overlay.show { display: flex; }
+.overlay .big { font-size: clamp(22px, 5vw, 32px); font-weight: 800; letter-spacing: 1px; }
+.overlay .note { color: var(--dim); font-size: 13px; line-height: 1.7; }
+.overlay .score { font-family: var(--mono); font-size: 20px; color: var(--c-o); }
+
+button {
+  font: inherit; color: var(--text); background: var(--panel2);
+  border: 1px solid var(--line); border-radius: 10px; padding: 9px 16px;
+  cursor: pointer; transition: transform .07s ease, border-color .15s ease;
+}
+button:hover { border-color: var(--accent); }
+button:active { transform: scale(.96); }
+button.primary { background: var(--accent); color: #04121a; border-color: transparent; font-weight: 700; }
+
+.toolbar { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
+.keys {
+  display: flex; gap: 6px 14px; flex-wrap: wrap; justify-content: center;
+  color: var(--dim); font-size: 12.5px; max-width: 640px; text-align: center;
+}
+kbd {
+  font-family: var(--mono); font-size: 11.5px; background: var(--panel2);
+  border: 1px solid var(--line); border-bottom-width: 2px;
+  border-radius: 6px; padding: 1px 6px; color: var(--text);
+}
+
+/* ===== Nut cam ung cho dien thoai ===== */
+#pad { display: none; gap: 10px; width: min(420px, 100%); }
+#pad button {
+  flex: 1; padding: 15px 0; font-size: 17px; background: var(--panel);
+  touch-action: manipulation; user-select: none;
+}
+@media (pointer: coarse), (max-width: 760px) { #pad { display: flex; } }
+@media (max-width: 760px) {
+  .stage { grid-template-columns: 1fr 1fr; grid-template-areas: "left right" "board board"; }
+  .col.left { grid-area: left; } .col.right { grid-area: right; } .well { grid-area: board; }
+  .col { flex-direction: row; flex-wrap: wrap; }
+  .card { flex: 1; min-width: 68px; }
+  .keys { display: none; }
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>TETRIS UIT PRO MAX</h1>
+  <p>UIT &middot; SS004 &middot; Nh&oacute;m Hidden Gem &mdash; b&#7843;n web c&#7911;a &#273;&#7891; &aacute;n OOP</p>
+</header>
+
+<div class="stage">
+  <div class="col left">
+    <div class="card">
+      <h2>Hold (C)</h2>
+      <canvas id="hold" width="120" height="80"></canvas>
+    </div>
+    <div class="card"><h2>Level</h2><div class="value" id="level">1</div></div>
+    <div class="card">
+      <h2>Lines</h2><div class="value" id="lines">0</div>
+      <div class="sub" id="speed">500ms</div>
+    </div>
+  </div>
+
+  <div class="well">
+    <canvas id="board"></canvas>
+
+    <div class="overlay show" id="ovStart">
+      <div class="big">S&#7861;N S&Agrave;NG?</div>
+      <div class="note">Di chuy&#7875;n <kbd>A</kbd><kbd>D</kbd> &middot; xoay <kbd>W</kbd> &middot; th&#7843; ngay <kbd>Space</kbd></div>
+      <button class="primary" data-act="start">B&#7854;T &#272;&#7846;U CH&#416;I</button>
+    </div>
+
+    <div class="overlay" id="ovPause">
+      <div class="big">T&#7840;M D&#7914;NG</div>
+      <div class="note">Nh&#7845;n <kbd>P</kbd> &#273;&#7875; ch&#417;i ti&#7871;p</div>
+      <button class="primary" data-act="resume">CH&#416;I TI&#7870;P</button>
+    </div>
+
+    <div class="overlay" id="ovOver">
+      <div class="big">GAME OVER</div>
+      <div class="score" id="ovScore">0</div>
+      <div class="note" id="ovBest">K&#7927; l&#7909;c: 0</div>
+      <button class="primary" data-act="restart">CH&#416;I L&#7840;I (R)</button>
+    </div>
+  </div>
+
+  <div class="col right">
+    <div class="card">
+      <h2>Next</h2>
+      <canvas id="next" width="120" height="260"></canvas>
+    </div>
+    <div class="card">
+      <h2>Score</h2><div class="value" id="score">0</div>
+      <div class="sub combo" id="combo">&nbsp;</div>
+    </div>
+    <div class="card"><h2>High score</h2><div class="value small" id="best">0</div></div>
+  </div>
+</div>
+
+<div id="pad">
+  <button data-act="left" aria-label="Sang trai">&#9664;</button>
+  <button data-act="rotate" aria-label="Xoay">&#8635;</button>
+  <button data-act="soft" aria-label="Roi nhanh">&#9660;</button>
+  <button data-act="hard" aria-label="Tha ngay">&#8681;</button>
+  <button data-act="hold" aria-label="Giu khoi">HOLD</button>
+  <button data-act="right" aria-label="Sang phai">&#9654;</button>
+</div>
+
+<div class="toolbar">
+  <button data-act="pause">&#10073;&#10073; T&#7841;m d&#7915;ng (P)</button>
+  <button data-act="restart">&#8635; Ch&#417;i l&#7841;i (R)</button>
+  <button data-act="theme" id="btnTheme">&#9789; Giao di&#7879;n</button>
+  <button data-act="sound" id="btnSound">&#128266; &Acirc;m thanh</button>
+</div>
+
+<div class="keys">
+  <span><kbd>A</kbd><kbd>D</kbd> / <kbd>&#8592;</kbd><kbd>&#8594;</kbd> di chuy&#7875;n</span>
+  <span><kbd>W</kbd> / <kbd>&#8593;</kbd> xoay</span>
+  <span><kbd>S</kbd> / <kbd>&#8595;</kbd> r&#417;i nhanh</span>
+  <span><kbd>Space</kbd> th&#7843; ngay</span>
+  <span><kbd>C</kbd> gi&#7919; kh&#7889;i</span>
+  <span><kbd>P</kbd> t&#7841;m d&#7915;ng</span>
+  <span><kbd>R</kbd> ch&#417;i l&#7841;i</span>
+</div>
+
+<script>
+"use strict";
+/* ============================================================================
+   Tetris UIT Pro Max - ban web.
+   Luat choi chep dung tu ban C++ trong src/: cung kich thuoc ban co, cung phep
+   xoay 4x4, cung 5 buoc day tuong, cung cong thuc diem va gia toc roi.
+   Ca game nam gon trong mot file de mo thang bang file:// khong can server.
+   ========================================================================== */
+
+/* ---------- Blocks: bay hinh dang goc, chu cai cung la ma mau ---------- */
+var TYPE_COUNT = 7;
+var SHAPES = [
+  ["    ", "IIII", "    ", "    "],   // 0 - I
+  ["    ", " OO ", " OO ", "    "],   // 1 - O
+  ["    ", " T  ", "TTT ", "    "],   // 2 - T
+  ["    ", " SS ", "SS  ", "    "],   // 3 - S
+  ["    ", "ZZ  ", " ZZ ", "    "],   // 4 - Z
+  ["    ", "J   ", "JJJ ", "    "],   // 5 - J
+  ["    ", "  L ", "LLL ", "    "]    // 6 - L
+];
+var LETTER = ["I", "O", "T", "S", "Z", "J", "L"];
+var COLOR_VAR = { I: "--c-i", O: "--c-o", T: "--c-t", S: "--c-s", Z: "--c-z", J: "--c-j", L: "--c-l" };
+
+function shapeGrid(type) {
+  return SHAPES[type].map(function (row) { return row.split(""); });
+}
+
+/* Mot khoi dang roi: hinh 4x4 + toa do goc tren trai tren ban co. */
+function Piece(type, x, y) {
+  this.type = type;
+  this.x = (x === undefined) ? 4 : x;
+  this.y = (y === undefined) ? 0 : y;
+  this.cells = shapeGrid(type);
+  this.vertical = false;            // chi khoi I dung toi
+}
+Piece.prototype.clone = function () {
+  var p = new Piece(this.type, this.x, this.y);
+  p.cells = this.cells.map(function (r) { return r.slice(); });
+  p.vertical = this.vertical;
+  return p;
+};
+Piece.prototype.at = function (r, c) {
+  if (r < 0 || r > 3 || c < 0 || c > 3) return " ";
+  return this.cells[r][c];
+};
+Piece.prototype.filled = function (r, c) { return this.at(r, c) !== " "; };
+Piece.prototype.move = function (dx, dy) { this.x += dx; this.y += dy; };
+
+/* DA HINH nhu ban C++: O khong doi, I chi co hai trang thai, con lai xoay 90 do. */
+Piece.prototype.rotate = function () {
+  if (this.type === 1) return;                       // khoi O
+
+  var i, j;
+  if (this.type === 0) {                             // khoi I
+    var blank = [[" ", " ", " ", " "], [" ", " ", " ", " "], [" ", " ", " ", " "], [" ", " ", " ", " "]];
+    if (this.vertical) { for (j = 0; j < 4; j++) blank[1][j] = "I"; }
+    else { for (i = 0; i < 4; i++) blank[i][1] = "I"; }
+    this.cells = blank;
+    this.vertical = !this.vertical;
+    return;
+  }
+
+  var turned = [];                                   // xoay 90 do theo chieu kim dong ho
+  for (i = 0; i < 4; i++) {
+    turned.push([]);
+    for (j = 0; j < 4; j++) turned[i].push(this.cells[3 - j][i]);
+  }
+  this.cells = turned;
+};
+
+/* ---------- Board: 20x12 ke ca tuong, giong het Board.h ---------- */
+var ROWS = 20, COLS = 12, WALL = "#", EMPTY = " ";
+
+function Board() { this.grid = []; this.reset(); }
+Board.prototype.reset = function () {
+  this.grid = [];
+  for (var r = 0; r < ROWS; r++) {
+    var row = [];
+    for (var c = 0; c < COLS; c++) {
+      var onEdge = (r === 0 || r === ROWS - 1 || c === 0 || c === COLS - 1);
+      row.push(onEdge ? WALL : EMPTY);
+    }
+    this.grid.push(row);
+  }
+};
+Board.prototype.at = function (r, c) {
+  if (r < 0 || r >= ROWS || c < 0 || c >= COLS) return WALL;   // ngoai luoi coi nhu tuong
+  return this.grid[r][c];
+};
+Board.prototype.isEmpty = function (r, c) { return this.at(r, c) === EMPTY; };
+Board.prototype.set = function (r, c, v) {
+  if (r >= 0 && r < ROWS && c >= 0 && c < COLS) this.grid[r][c] = v;
+};
+Board.prototype.canPlace = function (piece, dx, dy) {
+  for (var i = 0; i < 4; i++) {
+    for (var j = 0; j < 4; j++) {
+      if (!piece.filled(i, j)) continue;
+      var r = piece.y + i + dy, c = piece.x + j + dx;
+      if (c < 1 || c >= COLS - 1 || r >= ROWS - 1) return false;
+      if (r >= 0 && !this.isEmpty(r, c)) return false;          // tren dinh van con trong
+    }
+  }
+  return true;
+};
+Board.prototype.place = function (piece) {
+  for (var i = 0; i < 4; i++)
+    for (var j = 0; j < 4; j++)
+      if (piece.filled(i, j)) this.set(piece.y + i, piece.x + j, piece.at(i, j));
+};
+Board.prototype.isRowFull = function (r) {
+  for (var c = 1; c < COLS - 1; c++) if (this.isEmpty(r, c)) return false;
+  return true;
+};
+Board.prototype.removeRow = function (row) {
+  for (var r = row; r > 1; r--)
+    for (var c = 1; c < COLS - 1; c++) this.grid[r][c] = this.grid[r - 1][c];
+  for (var c2 = 1; c2 < COLS - 1; c2++) this.grid[1][c2] = EMPTY;
+};
+
+/* ---------- Bag7: xao du bay loai roi phat lan luot ---------- */
+function Bag7() { this.pieces = []; this.position = TYPE_COUNT; }
+Bag7.prototype.refill = function () {
+  this.pieces = [0, 1, 2, 3, 4, 5, 6];
+  for (var i = TYPE_COUNT - 1; i > 0; i--) {      // Fisher-Yates
+    var j = Math.floor(Math.random() * (i + 1));
+    var keep = this.pieces[i]; this.pieces[i] = this.pieces[j]; this.pieces[j] = keep;
+  }
+  this.position = 0;
+};
+Bag7.prototype.next = function () {
+  if (this.position >= TYPE_COUNT) this.refill();
+  return this.pieces[this.position++];
+};
+
+/* ---------- DropSpeedController: toc do, level, diem, combo ---------- */
+function Speed(initialMs, stepMs, minMs) {
+  this.initialInterval = initialMs || 500;
+  this.speedStep = stepMs || 25;
+  this.minimumInterval = minMs || 80;
+  this.reset();
+}
+Speed.prototype.reset = function () {
+  this.currentInterval = this.initialInterval;
+  this.totalLines = 0; this.score = 0; this.level = 1; this.combo = 0;
+};
+Speed.prototype.onLinesCleared = function (count) {
+  if (count <= 0) return;
+  this.totalLines += count;
+  this.combo++;
+
+  var base;
+  switch (count) {
+    case 1: base = 100; break;
+    case 2: base = 300; break;
+    case 3: base = 500; break;
+    case 4: base = 800; break;            // Tetris!
+    default: base = count * 200;
+  }
+  var comboBonus = (this.combo > 1) ? (this.combo - 1) * 50 * this.level : 0;
+  this.score += (base * this.level) + comboBonus;
+
+  this.level = 1 + Math.floor(this.totalLines / 10);          // len cap moi 10 hang
+  this.currentInterval = this.initialInterval - (this.totalLines * this.speedStep);
+  if (this.currentInterval < this.minimumInterval) this.currentInterval = this.minimumInterval;
+};
+Speed.prototype.resetCombo = function () { this.combo = 0; };
+
+/* ---------- Am thanh: Web Audio, khong dung file ngoai ---------- */
+var Sound = {
+  ctx: null,
+  on: localStorage.getItem("tetris_uit_sound") !== "off",
+  unlock: function () {
+    if (!this.ctx) {
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if (AC) this.ctx = new AC();
+    }
+    if (this.ctx && this.ctx.state === "suspended") this.ctx.resume();
+  },
+  tone: function (freq, start, dur, type, gain) {
+    if (!this.on || !this.ctx) return;
+    var t0 = this.ctx.currentTime + start;
+    var osc = this.ctx.createOscillator(), g = this.ctx.createGain();
+    osc.type = type || "square";
+    osc.frequency.setValueAtTime(freq, t0);
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.exponentialRampToValueAtTime(gain || 0.15, t0 + 0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+    osc.connect(g); g.connect(this.ctx.destination);
+    osc.start(t0); osc.stop(t0 + dur + 0.02);
+  },
+  chord: function (freqs, dur, type, gain) {          // nhieu note cung luc
+    for (var i = 0; i < freqs.length; i++) this.tone(freqs[i], 0, dur, type, gain);
+  },
+  play: function (name) {
+    if (!this.on) return;
+    this.unlock();
+    switch (name) {
+      case "move": this.tone(220, 0, 0.05, "square", 0.07); break;
+      case "rotate": this.tone(420, 0, 0.06, "triangle", 0.10); break;
+      case "hold": this.chord([330, 494], 0.10, "triangle", 0.09); break;
+      case "drop": this.tone(150, 0, 0.09, "sawtooth", 0.10); break;
+      case "lock": this.tone(110, 0, 0.07, "square", 0.08); break;
+      case "clear": this.chord([523, 659, 784], 0.22, "triangle", 0.10); break;
+      case "tetris":
+        this.chord([523, 659, 784, 1047], 0.32, "triangle", 0.11);
+        this.tone(1319, 0.10, 0.28, "triangle", 0.08);
+        break;
+      case "level":
+        this.tone(659, 0, 0.10, "triangle", 0.10);
+        this.tone(988, 0.10, 0.18, "triangle", 0.10);
+        break;
+      case "over":
+        this.tone(392, 0.00, 0.18, "sawtooth", 0.11);
+        this.tone(311, 0.16, 0.20, "sawtooth", 0.11);
+        this.tone(233, 0.34, 0.42, "sawtooth", 0.12);
+        break;
+    }
+  }
+};
+
+/* ---------- Game: gom moi thu lai va chay vong lap ---------- */
+var board = new Board();
+var bag = new Bag7();
+var speed = new Speed(500, 25, 80);
+var current = null;
+var nextQueue = [];
+var holdType = -1;
+var canHold = true;
+var dropTimer = 0;
+var state = "ready";              // ready | playing | paused | clearing | over
+var flashRows = [];               // cac hang day dang nhap nhay truoc khi xoa
+var flashTimer = 0;
+var FLASH_MS = 160;
+var best = parseInt(localStorage.getItem("tetris_uit_highscore") || "0", 10) || 0;
+
+var el = {};
+["board", "hold", "next", "score", "best", "level", "lines", "speed", "combo",
+  "ovStart", "ovPause", "ovOver", "ovScore", "ovBest", "btnTheme", "btnSound"].forEach(function (id) {
+  el[id] = document.getElementById(id);
+});
+var ctx = el.board.getContext("2d");
+var holdCtx = el.hold.getContext("2d");
+var nextCtx = el.next.getContext("2d");
+
+function fillQueue() { nextQueue = [bag.next(), bag.next(), bag.next(), bag.next()]; }
+
+function spawn(type) {
+  if (type === undefined || type === -1) {
+    type = nextQueue.shift();
+    nextQueue.push(bag.next());
+  }
+  current = new Piece(type, 4, 0);
+  canHold = true;
+}
+
+function ghostRow() {
+  var row = current.y;
+  while (board.canPlace(current, 0, row - current.y + 1)) row++;
+  return row;
+}
+
+function canMove(dx, dy) { return board.canPlace(current, dx, dy); }
+
+/* ---------- Thao tac cua nguoi choi ---------- */
+function moveLeft() { if (state === "playing" && canMove(-1, 0)) { current.move(-1, 0); Sound.play("move"); } }
+function moveRight() { if (state === "playing" && canMove(1, 0)) { current.move(1, 0); Sound.play("move"); } }
+
+function softDrop() {
+  if (state !== "playing") return;
+  if (canMove(0, 1)) { current.move(0, 1); dropTimer = 0; }     // roi nhanh khong cong diem
+}
+
+function rotatePiece() {
+  if (state !== "playing") return;
+  var turned = current.clone();
+  turned.rotate();
+  var kick = [0, -1, 1, -2, 2];                                  // nam buoc day tuong
+  for (var k = 0; k < kick.length; k++) {
+    if (board.canPlace(turned, kick[k], 0)) {
+      turned.move(kick[k], 0);
+      current = turned;
+      Sound.play("rotate");
+      return;
+    }
+  }
+}
+
+function hold() {
+  if (state !== "playing" || !canHold) return;
+  if (holdType === -1) { holdType = current.type; spawn(); }
+  else { var keep = holdType; holdType = current.type; spawn(keep); }
+  canHold = false;                    // dat sau spawn() vi spawn() bat lai canHold
+  Sound.play("hold");
+}
+
+function hardDrop() {
+  if (state !== "playing") return;
+  while (canMove(0, 1)) current.move(0, 1);
+  Sound.play("drop");
+  lockPiece();
+  dropTimer = 0;
+}
+
+/* ---------- Trong luc va chot khoi ---------- */
+function applyGravity() {
+  if (canMove(0, 1)) { current.move(0, 1); return; }
+  lockPiece();
+}
+
+function lockPiece() {
+  board.place(current);
+
+  flashRows = [];
+  for (var r = 1; r < ROWS - 1; r++) if (board.isRowFull(r)) flashRows.push(r);
+
+  if (flashRows.length > 0) {
+    Sound.play(flashRows.length >= 4 ? "tetris" : "clear");
+    state = "clearing";               // nhap nhay mot nhip roi moi xoa
+    flashTimer = 0;
+    return;
+  }
+
+  Sound.play("lock");
+  speed.resetCombo();
+  afterLock();
+}
+
+function finishClear() {
+  var oldLevel = speed.level;
+  for (var i = 0; i < flashRows.length; i++) board.removeRow(flashRows[i]);   // xoa tu tren xuong
+  speed.onLinesCleared(flashRows.length);
+  flashRows = [];
+  if (speed.level > oldLevel) Sound.play("level");
+  afterLock();
+}
+
+function afterLock() {
+  spawn();
+  state = "playing";
+  if (!canMove(0, 0)) gameOver();                 // khoi moi khong co cho dat la thua
+}
+
+function gameOver() {
+  state = "over";
+  Sound.play("over");
+  if (speed.score > best) {
+    best = speed.score;
+    try { localStorage.setItem("tetris_uit_highscore", String(best)); } catch (e) { }
+  }
+  el.ovScore.textContent = speed.score.toLocaleString("vi-VN");
+  el.ovBest.textContent = "Kỷ lục: " + best.toLocaleString("vi-VN");
+  showOverlay(el.ovOver);
+}
+
+function restart() {
+  board.reset();
+  speed.reset();
+  bag = new Bag7();
+  holdType = -1; canHold = true;
+  dropTimer = 0; flashRows = []; flashTimer = 0;
+  fillQueue(); spawn();
+  state = "playing";
+  showOverlay(null);
+}
+
+function togglePause() {
+  if (state === "playing") { state = "paused"; showOverlay(el.ovPause); }
+  else if (state === "paused") { state = "playing"; showOverlay(null); }
+}
+
+function showOverlay(node) {
+  [el.ovStart, el.ovPause, el.ovOver].forEach(function (o) { o.classList.remove("show"); });
+  if (node) node.classList.add("show");
+}
+
+/* ---------- Ve man hinh ---------- */
+var CELL = 26, PAD = 1;
+
+function cssColor(name) {
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+}
+function colorOf(ch) {
+  var v = COLOR_VAR[ch];
+  return v ? cssColor(v) : cssColor("--dim");
+}
+
+function resizeBoard() {
+  var maxW = Math.min(window.innerWidth - 60, 340);
+  var maxH = Math.max(window.innerHeight - 300, 320);
+  CELL = Math.max(16, Math.floor(Math.min(maxW / 10, maxH / 18)));
+
+  var dpr = window.devicePixelRatio || 1;
+  el.board.width = 10 * CELL * dpr;
+  el.board.height = 18 * CELL * dpr;
+  el.board.style.width = (10 * CELL) + "px";
+  el.board.style.height = (18 * CELL) + "px";
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+
+/* Mot o gach: nen mau + vien sang o tren cho co khoi. */
+function drawCell(g, x, y, size, color, alpha) {
+  var a = (alpha === undefined) ? 1 : alpha;
+  g.save();
+  g.globalAlpha = a;
+  g.fillStyle = color;
+  roundRect(g, x + PAD, y + PAD, size - PAD * 2, size - PAD * 2, Math.max(2, size * 0.16));
+  g.fill();
+  g.globalAlpha = a * 0.55;
+  g.fillStyle = "rgba(255,255,255,.35)";
+  roundRect(g, x + PAD + 2, y + PAD + 2, size - PAD * 2 - 4, Math.max(2, size * 0.22), 2);
+  g.fill();
+  g.restore();
+}
+
+function drawGhost(g, x, y, size, color) {
+  g.save();
+  g.globalAlpha = 0.38;
+  g.strokeStyle = color;
+  g.lineWidth = Math.max(1.5, size * 0.08);
+  roundRect(g, x + PAD + 1, y + PAD + 1, size - PAD * 2 - 2, size - PAD * 2 - 2, Math.max(2, size * 0.16));
+  g.stroke();
+  g.restore();
+}
+
+function roundRect(g, x, y, w, h, r) {
+  g.beginPath();
+  g.moveTo(x + r, y);
+  g.arcTo(x + w, y, x + w, y + h, r);
+  g.arcTo(x + w, y + h, x, y + h, r);
+  g.arcTo(x, y + h, x, y, r);
+  g.arcTo(x, y, x + w, y, r);
+  g.closePath();
+}
+
+function drawBoard(time) {
+  var W = 10 * CELL, H = 18 * CELL;
+  ctx.clearRect(0, 0, W, H);
+
+  ctx.fillStyle = cssColor("--well");
+  ctx.fillRect(0, 0, W, H);
+
+  ctx.strokeStyle = cssColor("--grid");            // luoi mo thay cho dau cham o ban console
+  ctx.lineWidth = 1;
+  var c, r;
+  for (c = 1; c < 10; c++) {
+    ctx.beginPath(); ctx.moveTo(c * CELL + .5, 0); ctx.lineTo(c * CELL + .5, H); ctx.stroke();
+  }
+  for (r = 1; r < 18; r++) {
+    ctx.beginPath(); ctx.moveTo(0, r * CELL + .5); ctx.lineTo(W, r * CELL + .5); ctx.stroke();
+  }
+
+  // Gach da nam yen: hang trong ban co la 1..18, cot la 1..10.
+  var blink = (state === "clearing") && (Math.floor(time / 60) % 2 === 0);
+  for (r = 1; r <= 18; r++) {
+    for (c = 1; c <= 10; c++) {
+      var ch = board.at(r, c);
+      if (ch === EMPTY) continue;
+      var isFlash = flashRows.indexOf(r) !== -1;
+      drawCell(ctx, (c - 1) * CELL, (r - 1) * CELL, CELL,
+        (isFlash && blink) ? "#ffffff" : colorOf(ch));
+    }
+  }
+
+  if (!current || state === "clearing") return;
+
+  var color = colorOf(LETTER[current.type]);
+  var gy = ghostRow();                             // bong mo cho biet khoi se rot dau
+  var i, j, rr, cc;
+  for (i = 0; i < 4; i++) {
+    for (j = 0; j < 4; j++) {
+      if (!current.filled(i, j)) continue;
+      rr = gy + i; cc = current.x + j;
+      if (rr >= 1 && rr <= 18 && cc >= 1 && cc <= 10)
+        drawGhost(ctx, (cc - 1) * CELL, (rr - 1) * CELL, CELL, color);
+    }
+  }
+
+  for (i = 0; i < 4; i++) {                        // khoi dang roi ve de len tren
+    for (j = 0; j < 4; j++) {
+      if (!current.filled(i, j)) continue;
+      rr = current.y + i; cc = current.x + j;
+      if (rr >= 1 && rr <= 18 && cc >= 1 && cc <= 10)
+        drawCell(ctx, (cc - 1) * CELL, (rr - 1) * CELL, CELL, colorOf(current.at(i, j)));
+    }
+  }
+}
+
+/* Ve mot khoi cho gon vao giua o chu nhat cho truoc (dung cho HOLD va NEXT). */
+function drawMini(g, type, boxX, boxY, boxW, boxH, dim) {
+  if (type === undefined || type === null || type < 0) return;
+  var cells = SHAPES[type];
+  var minR = 9, maxR = -1, minC = 9, maxC = -1;
+  var r, c;
+  for (r = 0; r < 4; r++) {
+    for (c = 0; c < 4; c++) {
+      if (cells[r][c] === " ") continue;
+      if (r < minR) minR = r;
+      if (r > maxR) maxR = r;
+      if (c < minC) minC = c;
+      if (c > maxC) maxC = c;
+    }
+  }
+  if (maxR < 0) return;
+
+  var w = maxC - minC + 1, h = maxR - minR + 1;
+  var size = Math.floor(Math.min(boxW / w, boxH / h, 20));
+  var ox = boxX + (boxW - w * size) / 2, oy = boxY + (boxH - h * size) / 2;
+  for (r = minR; r <= maxR; r++)
+    for (c = minC; c <= maxC; c++)
+      if (cells[r][c] !== " ")
+        drawCell(g, ox + (c - minC) * size, oy + (r - minR) * size, size,
+          colorOf(cells[r][c]), dim ? 0.35 : 1);
+}
+
+function drawPanels() {
+  var dpr = window.devicePixelRatio || 1;
+
+  [[el.hold, holdCtx, 120, 80], [el.next, nextCtx, 120, 260]].forEach(function (item) {
+    var cv = item[0], g = item[1], w = item[2], h = item[3];
+    if (cv.width !== Math.round(w * dpr)) {
+      cv.width = Math.round(w * dpr);
+      cv.height = Math.round(h * dpr);
+    }
+    g.setTransform(dpr, 0, 0, dpr, 0, 0);
+    g.clearRect(0, 0, w, h);
+  });
+
+  drawMini(holdCtx, holdType, 0, 0, 120, 80, !canHold);
+  for (var i = 0; i < nextQueue.length; i++)
+    drawMini(nextCtx, nextQueue[i], 0, i * 65, 120, 65, false);
+}
+
+function drawHud() {
+  el.score.textContent = speed.score.toLocaleString("vi-VN");
+  el.best.textContent = Math.max(best, speed.score).toLocaleString("vi-VN");
+  el.level.textContent = speed.level;
+  el.lines.textContent = speed.totalLines;
+  el.speed.textContent = speed.currentInterval + "ms";
+  el.combo.innerHTML = speed.combo > 1 ? ("COMBO x" + speed.combo) : "&nbsp;";
+}
+
+/* ---------- Vong lap chinh: 60 FPS, dong ho roi tinh bang mili giay ---------- */
+var lastTime = 0;
+function loop(now) {
+  var dt = lastTime ? Math.min(now - lastTime, 100) : 0;
+  lastTime = now;
+
+  if (state === "playing") {
+    dropTimer += dt;
+    if (dropTimer >= speed.currentInterval) { dropTimer = 0; applyGravity(); }
+  } else if (state === "clearing") {
+    flashTimer += dt;
+    if (flashTimer >= FLASH_MS) finishClear();
+  }
+
+  drawBoard(now);
+  drawPanels();
+  drawHud();
+  requestAnimationFrame(loop);
+}
+
+/* ---------- Ban phim: giong bang phim cua ban console ---------- */
+var KEY_ACTION = {
+  "a": moveLeft, "A": moveLeft, "ArrowLeft": moveLeft,
+  "d": moveRight, "D": moveRight, "ArrowRight": moveRight,
+  "s": softDrop, "S": softDrop, "ArrowDown": softDrop,
+  "w": rotatePiece, "W": rotatePiece, "ArrowUp": rotatePiece,
+  "c": hold, "C": hold,
+  " ": hardDrop,
+  "p": togglePause, "P": togglePause,
+  "r": restart, "R": restart
+};
+
+document.addEventListener("keydown", function (e) {
+  Sound.unlock();
+
+  if (state === "ready" && (e.key === " " || e.key === "Enter")) {
+    e.preventDefault(); restart(); return;
+  }
+
+  var fn = KEY_ACTION[e.key];
+  if (!fn) return;
+  e.preventDefault();
+  if (e.key === " " && e.repeat) return;      // giu Space khong tha lien tuc
+  fn();
+});
+
+/* ---------- Nut bam, nut cam ung, doi giao dien, bat tat am thanh ---------- */
+function applyTheme(name) {
+  document.documentElement.setAttribute("data-theme", name);
+  try { localStorage.setItem("tetris_uit_theme", name); } catch (e) { }
+  el.btnTheme.innerHTML = (name === "dark" ? "☽" : "☀") + " Giao diện";
+}
+
+var ACTIONS = {
+  start: restart, restart: restart, resume: togglePause, pause: togglePause,
+  left: moveLeft, right: moveRight, rotate: rotatePiece, soft: softDrop,
+  hard: hardDrop, hold: hold,
+  theme: function () {
+    applyTheme(document.documentElement.getAttribute("data-theme") === "dark" ? "light" : "dark");
+  },
+  sound: function () {
+    Sound.on = !Sound.on;
+    try { localStorage.setItem("tetris_uit_sound", Sound.on ? "on" : "off"); } catch (e) { }
+    el.btnSound.innerHTML = (Sound.on ? "🔊" : "🔇") + " Âm thanh";
+    if (Sound.on) Sound.play("rotate");
+  }
+};
+
+document.addEventListener("click", function (e) {
+  var btn = e.target.closest("[data-act]");
+  if (!btn) return;
+  Sound.unlock();
+  var fn = ACTIONS[btn.getAttribute("data-act")];
+  if (fn) fn();
+});
+
+/* Vuot tren san choi: sang trai/phai de di, vuot xuong de roi nhanh, cham de xoay. */
+(function touchControls() {
+  var sx = 0, sy = 0, moved = false, lastStep = 0;
+
+  el.board.addEventListener("touchstart", function (e) {
+    Sound.unlock();
+    sx = e.touches[0].clientX; sy = e.touches[0].clientY;
+    moved = false; lastStep = 0;
+  }, { passive: true });
+
+  el.board.addEventListener("touchmove", function (e) {
+    var dx = e.touches[0].clientX - sx, dy = e.touches[0].clientY - sy;
+    var step = Math.max(22, CELL);
+    if (Math.abs(dx) > Math.abs(dy)) {
+      var steps = Math.trunc(dx / step);
+      while (lastStep < steps) { moveRight(); lastStep++; moved = true; }
+      while (lastStep > steps) { moveLeft(); lastStep--; moved = true; }
+    } else if (dy > step * 1.2) {
+      softDrop(); sy = e.touches[0].clientY; moved = true;
+    }
+    e.preventDefault();
+  }, { passive: false });
+
+  el.board.addEventListener("touchend", function () {
+    if (moved) return;
+    if (state === "ready") restart(); else rotatePiece();
+  }, { passive: true });
+})();
+
+window.addEventListener("resize", resizeBoard);
+
+/* ---------- Khoi dong ---------- */
+(function init() {
+  applyTheme(localStorage.getItem("tetris_uit_theme") || "dark");
+  el.btnSound.innerHTML = (Sound.on ? "🔊" : "🔇") + " Âm thanh";
+
+  resizeBoard();
+  fillQueue();
+  spawn();
+  state = "ready";
+  showOverlay(el.ovStart);
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>
