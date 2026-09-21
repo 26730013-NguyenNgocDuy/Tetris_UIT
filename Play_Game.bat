@@ -21,7 +21,7 @@ if "%1"=="test" (
 echo Đang biên dịch Tetris C++...
 g++ main.cpp -o Tetris.exe -O2
 if %ERRORLEVEL% NEQ 0 (
-    echo [LỖI] Không thể biên dịch mã nguồn C++. Vui lòng kiểm tra lại g++ (MinGW).
+    echo [LỖI] Không thể biên dịch mã nguồn C++. Vui lòng kiểm tra lại g++ ^(MinGW^).
     pause
     exit /b 1
 )
