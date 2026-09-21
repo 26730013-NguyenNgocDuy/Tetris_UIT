@@ -68,3 +68,6 @@ vcpkg_installed/
 # test output & cache
 Testing/
 .cache/
+
+# VS Code settings (may khac nhau moi nguoi)
+.vscode/
