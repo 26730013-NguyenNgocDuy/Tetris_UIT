@@ -152,8 +152,10 @@ void Game::hardDrop()
     while (canMove(0, 1))
         current->move(0, 1);
 
-    // Đồng hồ rơi đầy ngay, nên nhịp kế tiếp khối được chốt lại
-    dropTimer = speed.getDropInterval();
+    // Chốt khối ngay, không đợi hết nhịp. Nếu đợi thì các phím bấm liền sau phím
+    // cách vẫn đẩy khối cũ trượt dưới đáy, thay vì điều khiển khối mới.
+    applyGravity();
+    dropTimer = 0;
     changed = true;
 }
 
@@ -252,9 +254,18 @@ void Game::run()
 {
     while (running)
     {
-        // ĐA HÌNH: ba lệnh dưới đây giống nhau ở mọi trạng thái, nhưng chạy ra
-        // việc khác nhau tuỳ đang chơi, đang tạm dừng hay đã thua
-        state->handle(input.poll());
+        // ĐA HÌNH: các lệnh dưới đây giống nhau ở mọi trạng thái, nhưng chạy ra
+        // việc khác nhau tuỳ đang chơi, đang tạm dừng hay đã thua.
+        //
+        // Xử lý HẾT các phím đang chờ trong một nhịp, rồi mới vẽ một lần. Nếu mỗi
+        // nhịp chỉ lấy một phím thì bấm nhanh xoay + đi + thả sẽ bị xếp hàng và trễ.
+        // Dừng lại khi vừa đổi trạng thái (ví dụ bấm P), phím còn lại để nhịp sau.
+        Action action = input.poll();
+        while (action != ACTION_NONE && pending == 0 && running)
+        {
+            state->handle(action);
+            action = (pending == 0) ? input.poll() : ACTION_NONE;
+        }
         state->update();
 
         if (running)
