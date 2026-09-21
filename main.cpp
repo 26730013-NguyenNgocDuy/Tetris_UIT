@@ -22,45 +22,6 @@ int holdBlock = -1;
 bool canHold = true;
 int nextQueue[4];
 
-// Định nghĩa 7 loại khối Tetrimino chuẩn quốc tế (4x4)
-char blocks[7][4][4] = {
-    // 0: Khối I
-    {{' ', ' ', ' ', ' '},
-     {'I', 'I', 'I', 'I'},
-     {' ', ' ', ' ', ' '},
-     {' ', ' ', ' ', ' '}},
-    // 1: Khối O
-    {{' ', ' ', ' ', ' '},
-     {' ', 'O', 'O', ' '},
-     {' ', 'O', 'O', ' '},
-     {' ', ' ', ' ', ' '}},
-    // 2: Khối T
-    {{' ', ' ', ' ', ' '},
-     {' ', 'T', ' ', ' '},
-     {'T', 'T', 'T', ' '},
-     {' ', ' ', ' ', ' '}},
-    // 3: Khối S
-    {{' ', ' ', ' ', ' '},
-     {' ', 'S', 'S', ' '},
-     {'S', 'S', ' ', ' '},
-     {' ', ' ', ' ', ' '}},
-    // 4: Khối Z
-    {{' ', ' ', ' ', ' '},
-     {'Z', 'Z', ' ', ' '},
-     {' ', 'Z', 'Z', ' '},
-     {' ', ' ', ' ', ' '}},
-    // 5: Khối J
-    {{' ', ' ', ' ', ' '},
-     {'J', ' ', ' ', ' '},
-     {'J', 'J', 'J', ' '},
-     {' ', ' ', ' ', ' '}},
-    // 6: Khối L
-    {{' ', ' ', ' ', ' '},
-     {' ', ' ', 'L', ' '},
-     {'L', 'L', 'L', ' '},
-     {' ', ' ', ' ', ' '}}
-};
-
 bool canMove(int dx, int dy, const Tetromino &piece)
 {
     for (int i = 0; i < 4; i++)
@@ -272,7 +233,7 @@ void draw()
             ColorRenderer::resetColor();
             for (int pj = 0; pj < 4; pj++)
             {
-                char ch = (holdBlock != -1) ? blocks[holdBlock][pi][pj] : ' ';
+                char ch = (holdBlock != -1) ? Tetromino::shapeAt(holdBlock, pi, pj) : ' ';
                 ColorRenderer::printCell(ch);
             }
             ColorRenderer::setColor(COLOR_DARK_CYAN);
@@ -422,7 +383,7 @@ void draw()
             ColorRenderer::resetColor();
             for (int pj = 0; pj < 4; pj++)
             {
-                char ch = blocks[pId][blockRow][pj];
+                char ch = Tetromino::shapeAt(pId, blockRow, pj);
                 ColorRenderer::printCell(ch);
             }
             ColorRenderer::setColor(COLOR_DARK_CYAN);
