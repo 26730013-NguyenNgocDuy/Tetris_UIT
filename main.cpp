@@ -10,6 +10,7 @@
 #include "Board.h"
 #include "Bag7.h"
 #include "Renderer.h"
+#include "Input.h"
 
 using namespace std;
 
@@ -118,6 +119,7 @@ DropSpeedController speedController;
 
 // Hàm vẽ toàn bộ UI chuẩn báo cáo 3.3
 Renderer renderer;
+Input input;
 
 // Ve man hinh: tinh vi tri bong khoi roi roi giao cho Renderer
 void draw()
@@ -160,45 +162,40 @@ int main()
     {
         board.erase(current);
 
-        if (kbhit())
+        // Đọc phím qua lớp Input: nhận về hành động chứ không phải ký tự
+        Action action = input.poll();
+
+        if (action == ACTION_LEFT && canMove(-1, 0))
+            current.move(-1, 0);
+
+        if (action == ACTION_RIGHT && canMove(1, 0))
+            current.move(1, 0);
+
+        if (action == ACTION_SOFT_DROP && canMove(0, 1))
         {
-            char c = getch();
-
-            if (c == 'a' && canMove(-1, 0))
-                current.move(-1, 0);
-
-            if (c == 'd' && canMove(1, 0))
-                current.move(1, 0);
-
-            if (c == 's')
-            {
-                if (canMove(0, 1))
-                {
-                    current.move(0, 1);
-                    speedController.addDropScore(1);
-                }
-            }
-
-            if (c == 'w')
-                rotate();
-
-            if (c == 'c' || c == 'C')
-                holdPiece();
-
-            if (c == ' ') // Hard drop
-            {
-                int dropDist = 0;
-                while (canMove(0, 1))
-                {
-                    current.move(0, 1);
-                    dropDist++;
-                }
-                speedController.addDropScore(dropDist * 2);
-            }
-
-            if (c == 'q')
-                break;
+            current.move(0, 1);
+            speedController.addDropScore(1);
         }
+
+        if (action == ACTION_ROTATE)
+            rotate();
+
+        if (action == ACTION_HOLD)
+            holdPiece();
+
+        if (action == ACTION_HARD_DROP)
+        {
+            int dropDist = 0;
+            while (canMove(0, 1))
+            {
+                current.move(0, 1);
+                dropDist++;
+            }
+            speedController.addDropScore(dropDist * 2);
+        }
+
+        if (action == ACTION_QUIT)
+            break;
 
         if (canMove(0, 1))
         {

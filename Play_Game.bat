@@ -21,7 +21,7 @@ if "%1"=="test" (
 echo Đang biên dịch Tetris C++...
 rem Danh sach file nguon cua game. Them file .cpp moi vao day khi tach lop.
 rem Khong dung *.cpp vi test_speed.cpp co ham main() rieng.
-set SRC=main.cpp Tetromino.cpp Board.cpp Bag7.cpp Renderer.cpp
+set SRC=main.cpp Tetromino.cpp Board.cpp Bag7.cpp Renderer.cpp Input.cpp
 g++ %SRC% -o Tetris.exe -O2
 if %ERRORLEVEL% NEQ 0 (
     echo [LỖI] Không thể biên dịch mã nguồn C++. Vui lòng kiểm tra lại g++ (MinGW).
