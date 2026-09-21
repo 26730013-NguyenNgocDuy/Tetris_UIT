@@ -5,10 +5,6 @@
 #include "GameState.h"
 #include "Platform.h"
 
-#include <iostream>
-
-using namespace std;
-
 Game::Game()
 {
     holdType = -1;
@@ -182,7 +178,7 @@ void Game::drawIfChanged()
 
 void Game::saveHighScore()
 {
-    ColorRenderer::setHighScore(speed.getScore());
+    highScore.submit(speed.getScore());
 }
 
 int Game::clearFullRows()
@@ -236,7 +232,7 @@ void Game::drawPlayfield()
     // Khối đang rơi KHÔNG nằm trong bàn cờ, nó chỉ được vẽ đè lên khi hiển thị.
     // Nhờ vậy tính bóng mờ không bị khối va vào chính nó, và lúc thua cũng không
     // xoá nhầm gạch cũ ở chỗ khối mới đè lên.
-    renderer.draw(board, *current, ghostRow(), holdType, nextQueue, speed);
+    renderer.draw(board, *current, ghostRow(), holdType, nextQueue, speed, highScore.getBest());
 }
 
 void Game::restart()
@@ -279,6 +275,5 @@ void Game::run()
     }
 
     saveHighScore();
-    ColorRenderer::gotoxy(0, 26);
-    cout << "\nCam on ban da trai nghiem Tetris Pro Max!\n";
+    renderer.showMessage(0, 26, "\nCam on ban da trai nghiem Tetris Pro Max!\n", COLOR_WHITE);
 }
