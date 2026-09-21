@@ -38,6 +38,7 @@
 *.exe
 *.out
 *.app
+/tetris
 
 # Build directories
 build/

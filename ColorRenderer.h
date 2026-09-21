@@ -2,8 +2,8 @@
 #define COLOR_RENDERER_H
 
 #include <iostream>
-#include <windows.h>
 #include <string>
+#include "Platform.h"
 
 /**
  * @brief Bảng màu Console chuẩn Windows
@@ -40,6 +40,7 @@ enum ConsoleColor {
  */
 class ColorRenderer {
 public:
+#ifdef _WIN32
     static void setColor(int textColor, int bgColor = COLOR_BLACK) {
         SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), (bgColor << 4) | textColor);
     }
@@ -63,6 +64,33 @@ public:
         SetConsoleCursorInfo(consoleHandle, &info);
         system("cls");
     }
+#else
+    // macOS / Linux: dùng mã màu ANSI thay cho Windows Console API
+    static void setColor(int textColor, int bgColor = COLOR_BLACK) {
+        // Thứ tự bit màu của Windows (B,G,R) khác ANSI (R,G,B)
+        static const int winToAnsi[8] = {0, 4, 2, 6, 1, 5, 3, 7};
+        int fg = (textColor & 8 ? 90 : 30) + winToAnsi[textColor & 7];
+        std::cout << "\033[" << fg;
+        if (bgColor == COLOR_BLACK)
+            std::cout << ";49";  // Giữ nền mặc định của terminal
+        else
+            std::cout << ";" << (bgColor & 8 ? 100 : 40) + winToAnsi[bgColor & 7];
+        std::cout << "m";
+    }
+
+    static void resetColor() {
+        std::cout << "\033[0m";
+    }
+
+    static void gotoxy(int x, int y) {
+        std::cout << "\033[" << (y + 1) << ";" << (x + 1) << "H";
+    }
+
+    static void setupConsole() {
+        // Xóa màn hình và ẩn con trỏ
+        std::cout << "\033[2J\033[H\033[?25l" << std::flush;
+    }
+#endif
 
     /**
      * @brief Màu sắc chuẩn của từng khối Tetrimino theo quy chuẩn Tetris quốc tế

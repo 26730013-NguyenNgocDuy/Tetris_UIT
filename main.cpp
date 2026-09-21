@@ -1,10 +1,9 @@
 #include <iostream>
-#include <conio.h>
 #include <cstdlib>
 #include <ctime>
-#include <windows.h>
 #include <vector>
 #include <iomanip>
+#include "Platform.h"
 #include "DropSpeedController.h"
 #include "ColorRenderer.h"
 
