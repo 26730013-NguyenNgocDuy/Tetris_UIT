@@ -41,8 +41,30 @@ enum ConsoleColor {
 class ColorRenderer {
 public:
 #ifdef _WIN32
+    // Lấy handle một lần thay vì gọi GetStdHandle ở mỗi lần đổi màu
+    static HANDLE outHandle() {
+        static HANDLE h = GetStdHandle(STD_OUTPUT_HANDLE);
+        return h;
+    }
+
+    // Màu đang áp dụng; -1 nghĩa là chưa xác định
+    static int &currentAttribute() {
+        static int attr = -1;
+        return attr;
+    }
+
     static void setColor(int textColor, int bgColor = COLOR_BLACK) {
-        SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), (bgColor << 4) | textColor);
+        int attr = (bgColor << 4) | textColor;
+
+        // Bỏ qua nếu màu không đổi: mỗi lần gọi API là một lần chuyển vào kernel
+        if (attr == currentAttribute())
+            return;
+
+        // Console API có hiệu lực ngay, còn cout thì có bộ đệm.
+        // Phải đẩy hết ký tự của màu cũ ra trước khi đổi màu.
+        std::cout << std::flush;
+        SetConsoleTextAttribute(outHandle(), attr);
+        currentAttribute() = attr;
     }
 
     static void resetColor() {
@@ -50,19 +72,22 @@ public:
     }
 
     static void gotoxy(int x, int y) {
+        // Tương tự setColor: đẩy bộ đệm ra trước khi dời con trỏ
+        std::cout << std::flush;
         COORD coord;
         coord.X = static_cast<SHORT>(x);
         coord.Y = static_cast<SHORT>(y);
-        SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
+        SetConsoleCursorPosition(outHandle(), coord);
     }
 
     static void setupConsole() {
-        HANDLE consoleHandle = GetStdHandle(STD_OUTPUT_HANDLE);
+        HANDLE consoleHandle = outHandle();
         CONSOLE_CURSOR_INFO info;
         info.dwSize = 100;
         info.bVisible = FALSE;
         SetConsoleCursorInfo(consoleHandle, &info);
         system("cls");
+        currentAttribute() = -1;
     }
 #else
     // macOS / Linux: dùng mã màu ANSI thay cho Windows Console API

@@ -3,6 +3,7 @@
 #include <ctime>
 #include <vector>
 #include <iomanip>
+#include <chrono>
 #include "Platform.h"
 #include "DropSpeedController.h"
 #include "ColorRenderer.h"
@@ -457,6 +458,9 @@ void draw()
     ColorRenderer::setColor(COLOR_DARK_GRAY);
     cout << "\n[A/D]: Trai/Phai  [W]: Xoay  [S]: Roi nhanh  [SPACE]: Tha ngay  [C]: Giu  [Q]: Thoat\n";
     ColorRenderer::resetColor();
+
+    // Đẩy cả khung hình ra một lần
+    cout << flush;
 }
 
 int removeLine()
@@ -485,9 +489,6 @@ int removeLine()
 
             // Kiểm tra lại dòng hiện tại
             i++;
-
-            draw();
-            Sleep(120);
         }
     }
 
@@ -497,42 +498,102 @@ int removeLine()
 int main()
 {
     srand(static_cast<unsigned int>(time(0)));
+
+    // Mặc định cout đi qua stdio và console là thiết bị không đệm, nên mỗi
+    // phép "<<" thành một lần ghi riêng. Tắt đồng bộ để gom ký tự lại,
+    // ColorRenderer sẽ tự đẩy bộ đệm ra trước mỗi lần đổi màu / dời con trỏ.
+    ios::sync_with_stdio(false);
+
     ColorRenderer::setupConsole();
 
     initBoard();
     initQueue();
     spawn(-1);
 
-    while (1)
+    // Vòng lặp chạy ở nhịp cố định ~60 khung/giây, tách rời khỏi tốc độ rơi.
+    // Phím được đọc mỗi khung nên độ trễ tối đa là FRAME_MS, không phải nhịp rơi.
+    const int FRAME_MS = 16;
+
+    // Dừng ngắn một lần sau khi ăn line, thay cho 120ms nhân mỗi hàng
+    const int LINE_CLEAR_FLASH_MS = 90;
+
+    chrono::steady_clock::time_point lastDrop = chrono::steady_clock::now();
+    bool running = true;
+
+    // Vẽ khung đầu tiên ngay, vì vòng lặp chỉ vẽ lại khi có thay đổi
+    block2Board();
+    draw();
+
+    while (running)
     {
         boardDelBlock();
 
-        if (kbhit())
+        // Vét sạch bộ đệm bàn phím mỗi khung, không chỉ lấy một phím
+        bool dirty = false;
+        bool hardDropped = false;
+
+        while (kbhit())
         {
-            char c = getch();
+            int c = getch();
 
-            if (c == 'a' && canMove(-1, 0))
-                x--;
+            // Phím mũi tên gửi nhiều byte: Windows dùng tiền tố 0/224,
+            // terminal Unix dùng chuỗi ESC [ A..D
+            if (c == 0 || c == 224)
+            {
+                int ext = getch();
+                if (ext == 75) c = 'a';
+                else if (ext == 77) c = 'd';
+                else if (ext == 72) c = 'w';
+                else if (ext == 80) c = 's';
+                else continue;
+            }
+            else if (c == 27)
+            {
+                if (!kbhit()) continue;
+                if (getch() != '[') continue;
+                if (!kbhit()) continue;
+                int ext = getch();
+                if (ext == 'D') c = 'a';
+                else if (ext == 'C') c = 'd';
+                else if (ext == 'A') c = 'w';
+                else if (ext == 'B') c = 's';
+                else continue;
+            }
 
-            if (c == 'd' && canMove(1, 0))
-                x++;
+            if (c >= 'A' && c <= 'Z')
+                c = c - 'A' + 'a';
 
-            if (c == 's')
+            dirty = true;
+
+            if (c == 'a')
+            {
+                if (canMove(-1, 0))
+                    x--;
+            }
+            else if (c == 'd')
+            {
+                if (canMove(1, 0))
+                    x++;
+            }
+            else if (c == 's')
             {
                 if (canMove(0, 1))
                 {
                     y++;
                     speedController.addDropScore(1);
+                    // Đã tự rơi một bậc nên tính lại nhịp trọng lực
+                    lastDrop = chrono::steady_clock::now();
                 }
             }
-
-            if (c == 'w')
+            else if (c == 'w')
+            {
                 rotate();
-
-            if (c == 'c' || c == 'C')
+            }
+            else if (c == 'c')
+            {
                 holdPiece();
-
-            if (c == ' ') // Hard drop
+            }
+            else if (c == ' ') // Hard drop
             {
                 int dropDist = 0;
                 while (canMove(0, 1))
@@ -541,54 +602,82 @@ int main()
                     dropDist++;
                 }
                 speedController.addDropScore(dropDist * 2);
+                hardDropped = true;
+                break; // khóa khối ngay trong khung này
             }
-
-            if (c == 'q')
-                break;
-        }
-
-        if (canMove(0, 1))
-        {
-            y++;
-        }
-        else
-        {
-            // Block đã chạm đáy
-            block2Board();
-
-            // Xóa line
-            int cleared = removeLine();
-
-            // Tăng tốc độ nếu có line bị xóa, hoặc reset combo nếu không ăn line
-            if (cleared > 0)
-                speedController.onLinesCleared(cleared);
-            else
-                speedController.resetCombo();
-
-            // Spawn block mới
-            spawn(-1);
-
-            // Kiểm tra GameOver
-            if (!canMove(0, 0))
+            else if (c == 'q')
             {
-                draw();
-                ColorRenderer::gotoxy(18, 10);
-                ColorRenderer::setColor(COLOR_RED, COLOR_WHITE);
-                cout << "   GAME OVER!   ";
-                ColorRenderer::resetColor();
+                running = false;
                 break;
+            }
+        }
+
+        if (!running)
+            break;
+
+        // Trọng lực tính theo đồng hồ thực, không theo số vòng lặp
+        chrono::steady_clock::time_point now = chrono::steady_clock::now();
+        long long sinceDrop =
+            chrono::duration_cast<chrono::milliseconds>(now - lastDrop).count();
+
+        if (hardDropped || sinceDrop >= speedController.getDropInterval())
+        {
+            lastDrop = now;
+            dirty = true;
+
+            if (canMove(0, 1))
+            {
+                y++;
+            }
+            else
+            {
+                // Block đã chạm đáy
+                block2Board();
+
+                // Xóa line
+                int cleared = removeLine();
+
+                if (cleared > 0)
+                {
+                    // Hiện bàn cờ vừa xóa hàng, dừng một nhịp ngắn duy nhất
+                    draw();
+                    Sleep(LINE_CLEAR_FLASH_MS);
+                    speedController.onLinesCleared(cleared);
+                }
+                else
+                {
+                    speedController.resetCombo();
+                }
+
+                // Spawn block mới
+                spawn(-1);
+
+                // Kiểm tra GameOver
+                if (!canMove(0, 0))
+                {
+                    draw();
+                    ColorRenderer::gotoxy(18, 10);
+                    ColorRenderer::setColor(COLOR_RED, COLOR_WHITE);
+                    cout << "   GAME OVER!   ";
+                    ColorRenderer::resetColor();
+                    cout << flush;
+                    break;
+                }
             }
         }
 
         block2Board();
 
-        draw();
+        // Chỉ vẽ lại khi có thay đổi: ở 60 khung/giây, vẽ mỗi khung
+        // sẽ tốn CPU và gây nháy màn hình vô ích
+        if (dirty)
+            draw();
 
-        Sleep(speedController.getDropInterval());
+        Sleep(FRAME_MS);
     }
 
     ColorRenderer::gotoxy(0, 23);
-    cout << "\nNhan phim bat ky de thoat...";
+    cout << "\nNhan phim bat ky de thoat..." << flush;
     getch();
 
     return 0;
