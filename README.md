@@ -72,7 +72,7 @@ Mỗi hàng phá được làm gạch rơi nhanh thêm **30 ms**. Phá 4 hàng m
 
 ## 🚀 Cài đặt và chơi ngay
 
-> ⚠️ Game dùng `<windows.h>` và `<conio.h>` nên hiện chỉ chạy trên **Windows**.
+> 🍎 **macOS / Linux**: chạy `./play.sh` (hoặc `g++ -std=c++11 main.cpp -o tetris && ./tetris`). `Platform.h` tự thay `<windows.h>`/`<conio.h>` bằng termios và mã màu ANSI.
 
 **1. Tải source về**
 
