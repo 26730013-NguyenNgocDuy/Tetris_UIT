@@ -96,7 +96,7 @@ Chỗ gọi chỉ cầm con trỏ `Blocks *current` và gọi `current->rotate()
 
 ## 🚀 Cài đặt và chơi ngay
 
-> 🍎 **macOS / Linux**: chạy `./play.sh` (hoặc `g++ -std=c++11 main.cpp Blocks.cpp BlockTypes.cpp Board.cpp Bag7.cpp Renderer.cpp Input.cpp Game.cpp GameState.cpp -o tetris && ./tetris`). `Platform.h` tự thay `<windows.h>`/`<conio.h>` bằng termios và mã màu ANSI.
+> 🍎 **macOS / Linux**: chạy `./play.sh` (hoặc `g++ -std=c++11 -Isrc/core -Isrc/game -Isrc/ui src/*.cpp src/core/*.cpp src/game/*.cpp src/ui/*.cpp -o tetris && ./tetris`). `Platform.h` tự thay `<windows.h>`/`<conio.h>` bằng termios và mã màu ANSI.
 
 **1. Tải source về**
 
@@ -114,7 +114,7 @@ cd Tetris_UIT
 - **🖥️ Cách 2: Chơi bản C++ Console (Minh chứng môn OOP)**
   - Với **MinGW / g++**:
   ```bash
-  g++ -O2 main.cpp Blocks.cpp BlockTypes.cpp Board.cpp Bag7.cpp Renderer.cpp Input.cpp Game.cpp GameState.cpp -o tetris.exe
+  g++ -O2 -Isrc/core -Isrc/game -Isrc/ui src/*.cpp src/core/*.cpp src/game/*.cpp src/ui/*.cpp -o tetris.exe
   ./tetris.exe
   ```
   - Hoặc click đúp file **`Play_Game.bat`** để tự động build và chạy ngay trong 1 click!
@@ -124,7 +124,7 @@ cd Tetris_UIT
 Để kiểm thử logic tốc độ rơi, combo và điểm số:
 
 ```bash
-g++ -O2 test_speed.cpp -o test_speed.exe
+g++ -O2 -Isrc/core tests/test_speed.cpp -o test_speed.exe
 ./test_speed.exe
 ```
 
@@ -153,21 +153,33 @@ g++ -O2 test_speed.cpp -o test_speed.exe
 
 ```
 Tetris_UIT/
-├── main.cpp                # Chỉ tạo đối tượng Game rồi chạy
-├── Game.h / Game.cpp       # Điều khiển ván chơi, sở hữu mọi thành phần bên dưới
-├── GameState.h / .cpp      # Lớp trừu tượng GameState + PlayingState, PausedState, GameOverState
-├── Renderer.h / .cpp       # Vẽ sân chơi, các khung thông tin, khung tạm dừng và thua cuộc
-├── Input.h / Input.cpp     # Đọc phím chữ và phím mũi tên, trả về hành động
-├── Blocks.h / Blocks.cpp   # Lớp trừu tượng cho một khối: hình dạng, vị trí, hàm xoay ảo
-├── BlockTypes.h / .cpp     # Bảy lớp con: BlockI, BlockO, BlockT, BlockS, BlockZ, BlockJ, BlockL
-├── Board.h / Board.cpp     # Sân chơi: lưới, va chạm, đặt khối, xoá hàng
-├── Bag7.h / Bag7.cpp       # Túi 7 khối, phát khối không bị trùng liên tục
-├── ColorRenderer.h         # Renderer màu sắc ANSI, bảng mã CP437, khử giật màn hình
-├── DropSpeedController.h   # Quản lý tốc độ rơi tăng dần, level và điểm combo (SV5)
-├── test_speed.cpp          # Bộ kiểm thử tự động (Unit Test 6/6 test cases)
-├── Play_Game.bat           # Launcher 1-click tự động build và chạy
+├── src/
+│   ├── main.cpp                  # Chỉ tạo đối tượng Game rồi chạy
+│   ├── core/                     # LUẬT CHƠI: không biết gì về màn hình hay bàn phím
+│   │   ├── Blocks.h / .cpp       #   Lớp trừu tượng cho một khối, hàm xoay ảo
+│   │   ├── BlockTypes.h / .cpp   #   Bảy lớp con BlockI, BlockO, BlockT, BlockS, BlockZ, BlockJ, BlockL
+│   │   ├── Board.h / .cpp        #   Sân chơi: lưới, va chạm, đặt khối, xoá hàng
+│   │   ├── Bag7.h / .cpp         #   Túi 7 khối, phát khối không bị trùng liên tục
+│   │   └── DropSpeedController.h #   Tốc độ rơi, level, điểm combo
+│   ├── game/                     # ĐIỀU KHIỂN: nối luật chơi với người chơi
+│   │   ├── Game.h / .cpp         #   Điều khiển ván chơi, sở hữu mọi thành phần
+│   │   ├── GameState.h / .cpp    #   Lớp trừu tượng GameState + Playing, Paused, GameOver
+│   │   ├── Input.h / .cpp        #   Đọc phím chữ và phím mũi tên, trả về hành động
+│   │   └── Platform.h            #   Tương thích Windows / macOS / Linux
+│   └── ui/                       # HIỂN THỊ: chỉ vẽ, không đổi dữ liệu game
+│       ├── Renderer.h / .cpp     #   Vẽ sân chơi, khung thông tin, khung tạm dừng và thua
+│       └── ColorRenderer.h       #   Màu ANSI, điểm cao, khử giật màn hình
+├── tests/
+│   └── test_speed.cpp            # Unit test cho DropSpeedController (6/6)
+├── dist_web/                     # Bản web chơi trên trình duyệt
+├── docs/                         # Báo cáo, slide thuyết trình
+├── Play_Game.bat                 # Windows: build và chạy bằng 1 cú bấm (thêm "test" để chạy unit test)
+├── Play_Web.bat                  # Mở bản web
+├── play.sh                       # macOS / Linux: build và chạy
 └── README.md
 ```
+
+Thêm một lớp mới chỉ cần đặt file `.cpp` và `.h` vào đúng thư mục `core`, `game` hoặc `ui`. Script build tự nhận, không phải sửa gì thêm.
 
 ---
 
