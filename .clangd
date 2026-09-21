@@ -1,0 +1,8 @@
+CompileFlags:
+  Compiler: C:/msys64/ucrt64/bin/g++.exe
+  Add:
+    - -std=gnu++20
+    - -IC:/Users/thanh/Documents/GitHub/Tetris_UIT/src
+    - -IC:/Users/thanh/Documents/GitHub/Tetris_UIT/src/core
+    - -IC:/Users/thanh/Documents/GitHub/Tetris_UIT/src/game
+    - -IC:/Users/thanh/Documents/GitHub/Tetris_UIT/src/ui
