@@ -33,6 +33,10 @@ class Input
 public:
     // Không có phím nào đang bấm thì trả về ACTION_NONE, không chờ người chơi
     Action poll();
+
+    // Bỏ hết các phím đang chờ, dùng khi khối vừa bị thả để phím bấm dồn cho
+    // khối cũ không làm khối mới vừa xuất hiện đã bị xoay hay dịch chỗ
+    void discardPending();
 };
 
 #endif // INPUT_H

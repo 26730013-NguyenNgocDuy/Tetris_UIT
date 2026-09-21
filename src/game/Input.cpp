@@ -34,6 +34,12 @@ static int readKey()
     return c;
 }
 
+void Input::discardPending()
+{
+    while (kbhit())
+        readKey();
+}
+
 Action Input::poll()
 {
     if (!kbhit())

@@ -5,10 +5,6 @@
 #include "GameState.h"
 #include "Platform.h"
 
-#include <iostream>
-
-using namespace std;
-
 Game::Game()
 {
     holdType = -1;
@@ -19,6 +15,7 @@ Game::Game()
     current = 0;
     dropTimer = 0;
     changed = true;
+    justDropped = false;
 
     board.reset();
     fillQueue();
@@ -156,9 +153,12 @@ void Game::hardDrop()
     while (canMove(0, 1))
         current->move(0, 1);
 
-    // Đồng hồ rơi đầy ngay, nên nhịp kế tiếp khối được chốt lại
-    dropTimer = speed.getDropInterval();
+    // Chốt khối ngay, không đợi hết nhịp. Nếu đợi thì các phím bấm liền sau phím
+    // cách vẫn đẩy khối cũ trượt dưới đáy, thay vì điều khiển khối mới.
+    applyGravity();
+    dropTimer = 0;
     changed = true;
+    justDropped = true;
 }
 
 void Game::tick()
@@ -182,7 +182,7 @@ void Game::drawIfChanged()
 
 void Game::saveHighScore()
 {
-    ColorRenderer::setHighScore(speed.getScore());
+    highScore.submit(speed.getScore());
 }
 
 int Game::clearFullRows()
@@ -236,7 +236,7 @@ void Game::drawPlayfield()
     // Khối đang rơi KHÔNG nằm trong bàn cờ, nó chỉ được vẽ đè lên khi hiển thị.
     // Nhờ vậy tính bóng mờ không bị khối va vào chính nó, và lúc thua cũng không
     // xoá nhầm gạch cũ ở chỗ khối mới đè lên.
-    renderer.draw(board, *current, ghostRow(), holdType, nextQueue, speed);
+    renderer.draw(board, *current, ghostRow(), holdType, nextQueue, speed, highScore.getBest());
 }
 
 void Game::restart()
@@ -256,9 +256,27 @@ void Game::run()
 {
     while (running)
     {
-        // ĐA HÌNH: ba lệnh dưới đây giống nhau ở mọi trạng thái, nhưng chạy ra
-        // việc khác nhau tuỳ đang chơi, đang tạm dừng hay đã thua
-        state->handle(input.poll());
+        // ĐA HÌNH: các lệnh dưới đây giống nhau ở mọi trạng thái, nhưng chạy ra
+        // việc khác nhau tuỳ đang chơi, đang tạm dừng hay đã thua.
+        //
+        // Xử lý HẾT các phím đang chờ trong một nhịp, rồi mới vẽ một lần. Nếu mỗi
+        // nhịp chỉ lấy một phím thì bấm nhanh xoay + đi + thả sẽ bị xếp hàng và trễ.
+        // Dừng lại khi vừa đổi trạng thái (ví dụ bấm P), phím còn lại để nhịp sau.
+        Action action = input.poll();
+        while (action != ACTION_NONE && pending == 0 && running)
+        {
+            state->handle(action);
+
+            // Vừa thả khối: bỏ các phím còn tồn, khối mới xuất hiện đúng chỗ
+            if (justDropped)
+            {
+                justDropped = false;
+                input.discardPending();
+                break;
+            }
+
+            action = (pending == 0) ? input.poll() : ACTION_NONE;
+        }
         state->update();
 
         if (running)
@@ -279,6 +297,5 @@ void Game::run()
     }
 
     saveHighScore();
-    ColorRenderer::gotoxy(0, 26);
-    cout << "\nCam on ban da trai nghiem Tetris Pro Max!\n";
+    renderer.showMessage(0, 26, "\nCam on ban da trai nghiem Tetris Pro Max!\n", COLOR_WHITE);
 }

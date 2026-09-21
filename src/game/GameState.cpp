@@ -6,6 +6,10 @@
 // ---------------------------------------------------------------- Đang chơi
 void PlayingState::handle(Action action)
 {
+    // Vừa thua trong nhịp này (khối mới không có chỗ) thì bỏ qua các phím còn lại
+    if (game->isOver())
+        return;
+
     switch (action)
     {
     case ACTION_LEFT:      game->moveLeft();    break;

@@ -1,13 +1,11 @@
 #ifndef COLOR_RENDERER_H
 #define COLOR_RENDERER_H
 
-#include <iostream>
-#include <string>
-#include <fstream>
-#include "Platform.h"
+#include <ostream>
+#include <sstream>
 
 /**
- * @brief Bảng màu Console chuẩn Windows và ANSI
+ * @brief Bảng màu 16 màu của console (giữ số thứ tự như Windows Console)
  */
 enum ConsoleColor {
     COLOR_BLACK         = 0,
@@ -29,143 +27,45 @@ enum ConsoleColor {
 };
 
 /**
- * @brief Class OOP ColorRenderer - Quản lý màu sắc và giao diện chuẩn Tetris Web Pro
+ * @brief Đối tượng giữ cửa sổ console: màu, vị trí con trỏ và một khung hình đệm.
+ *
+ * Trước đây mọi hàm đều static và mỗi lần đổi màu là một lần gọi Windows API,
+ * nên một lần vẽ màn hình mất khoảng 26 ms (hàng trăm lần gọi lẻ). Nay mọi lệnh
+ * vẽ chỉ ghi vào bộ đệm frame dưới dạng mã ANSI, rồi flush() đẩy cả khung hình
+ * ra màn hình trong MỘT lần ghi. Cách này chạy giống nhau trên Windows 10+,
+ * macOS và Linux nên không còn phải viết hai phiên bản như trước.
+ *
+ * TÍNH ĐÓNG GÓI: bộ đệm là dữ liệu riêng tư; bên ngoài chỉ gọi setColor(),
+ * gotoxy(), printCell(), out() và flush().
  */
-class ColorRenderer {
+class ColorRenderer
+{
 public:
-#ifdef _WIN32
-    static void setColor(int textColor, int bgColor = COLOR_BLACK) {
-        SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), (bgColor << 4) | textColor);
-    }
+    ColorRenderer();    // bật chế độ màu ANSI, UTF-8, ẩn con trỏ, xoá màn hình
+    ~ColorRenderer();   // trả lại màu mặc định và hiện lại con trỏ
 
-    static void resetColor() {
-        setColor(COLOR_WHITE, COLOR_BLACK);
-    }
+    void setColor(int textColor, int bgColor = COLOR_BLACK);
+    void resetColor();
+    void gotoxy(int x, int y);
 
-    static void gotoxy(int x, int y) {
-        COORD coord;
-        coord.X = static_cast<SHORT>(x);
-        coord.Y = static_cast<SHORT>(y);
-        SetConsoleCursorPosition(GetStdHandle(STD_OUTPUT_HANDLE), coord);
-    }
+    // In một ô 2 ký tự: gạch, tường, bóng mờ, hoặc ô trống có chấm lưới
+    void printCell(char ch, bool isPlayfield = false);
 
-    static void setupConsole() {
-        // Thiết lập mã UTF-8 cho Windows Console để hiển thị khối và viền mượt mà
-        SetConsoleOutputCP(65001);
-        SetConsoleCP(65001);
+    // Luồng ghi chữ vào khung hình, dùng như cout: console.out() << "abc";
+    std::ostream &out() { return frame; }
 
-        HANDLE consoleHandle = GetStdHandle(STD_OUTPUT_HANDLE);
-        CONSOLE_CURSOR_INFO info;
-        info.dwSize = 100;
-        info.bVisible = FALSE;
-        SetConsoleCursorInfo(consoleHandle, &info);
-        system("cls");
-    }
-#else
-    // macOS / Linux: dùng mã màu ANSI thay cho Windows Console API
-    static void setColor(int textColor, int bgColor = COLOR_BLACK) {
-        static const int winToAnsi[8] = {0, 4, 2, 6, 1, 5, 3, 7};
-        int fg = (textColor & 8 ? 90 : 30) + winToAnsi[textColor & 7];
-        std::cout << "\033[" << fg;
-        if (bgColor == COLOR_BLACK)
-            std::cout << ";49";
-        else
-            std::cout << ";" << (bgColor & 8 ? 100 : 40) + winToAnsi[bgColor & 7];
-        std::cout << "m";
-    }
+    // Đẩy toàn bộ khung hình ra màn hình trong một lần ghi, rồi làm rỗng bộ đệm
+    void flush();
 
-    static void resetColor() {
-        std::cout << "\033[0m";
-    }
+    // Màu chuẩn của từng loại khối, không phụ thuộc đối tượng nào
+    static int getCharColor(char ch);
 
-    static void gotoxy(int x, int y) {
-        std::cout << "\033[" << (y + 1) << ";" << (x + 1) << "H";
-    }
+private:
+    std::ostringstream frame;
 
-    static void setupConsole() {
-        std::cout << "\033[2J\033[H\033[?25l" << std::flush;
-    }
-#endif
-
-    /**
-     * @brief Màu sắc chuẩn của từng khối Tetrimino theo quy chuẩn Tetris Guidelines (giống Web)
-     */
-    static int getCharColor(char ch) {
-        switch (ch) {
-            case 'I': return COLOR_CYAN;         // I: Cyan (#06b6d4)
-            case 'O': return COLOR_YELLOW;       // O: Yellow (#eab308)
-            case 'T': return COLOR_MAGENTA;      // T: Purple/Magenta (#a855f7)
-            case 'S': return COLOR_GREEN;        // S: Green (#22c55e)
-            case 'Z': return COLOR_RED;          // Z: Red (#ef4444)
-            case 'J': return COLOR_BLUE;         // J: Blue (#3b82f6)
-            case 'L': return COLOR_DARK_YELLOW;  // L: Orange (#f97316)
-            case '#': return COLOR_DARK_CYAN;    // Viền tường
-            case '+': return COLOR_DARK_GRAY;    // Ghost piece (bóng mờ)
-            default:  return COLOR_WHITE;
-        }
-    }
-
-    /**
-     * @brief In 1 ô tế bào với tỷ lệ 1:1 chuẩn xác theo giao diện Web
-     * @param ch Ký tự đại diện cho ô (I, O, T, S, Z, J, L, #, +, ' ')
-     * @param isPlayfield True nếu ô nằm trong lòng sân chơi (để vẽ lưới chấm mờ)
-     */
-    static void printCell(char ch, bool isPlayfield = false) {
-        if (ch == ' ') {
-            if (isPlayfield) {
-                // Lưới sân chơi chấm mờ như đường grid của canvas Web
-                setColor(COLOR_DARK_GRAY);
-                std::cout << " .";
-                resetColor();
-            } else {
-                std::cout << "  ";
-            }
-            return;
-        }
-
-        if (ch == '+') {
-            // Ghost piece: đổ bóng dạng lưới thanh lịch dự đoán vị trí rơi
-            setColor(COLOR_DARK_GRAY);
-            std::cout << "::";
-            resetColor();
-            return;
-        }
-
-        if (ch == '#') {
-            setColor(COLOR_DARK_CYAN);
-            std::cout << "[]";
-            resetColor();
-            return;
-        }
-
-        int color = getCharColor(ch);
-        setColor(color);
-        // Khối vuông rực rỡ vuông vức 1:1
-        std::cout << "[]";
-        resetColor();
-    }
-
-    /**
-     * @brief Quản lý High Score (Đọc và ghi file highscore.dat giống localStorage của Web)
-     */
-    static int getHighScore() {
-        std::ifstream file("highscore.dat");
-        int hs = 0;
-        if (file >> hs) {
-            return hs;
-        }
-        return 0;
-    }
-
-    static void setHighScore(int newScore) {
-        int currentHs = getHighScore();
-        if (newScore > currentHs) {
-            std::ofstream file("highscore.dat");
-            if (file) {
-                file << newScore;
-            }
-        }
-    }
+    // Chỉ có một cửa sổ console, không cho sao chép đối tượng này
+    ColorRenderer(const ColorRenderer &);
+    void operator = (const ColorRenderer &);
 };
 
 #endif // COLOR_RENDERER_H

@@ -165,10 +165,11 @@ Tetris_UIT/
 │   │   ├── Game.h / .cpp         #   Điều khiển ván chơi, sở hữu mọi thành phần
 │   │   ├── GameState.h / .cpp    #   Lớp trừu tượng GameState + Playing, Paused, GameOver
 │   │   ├── Input.h / .cpp        #   Đọc phím chữ và phím mũi tên, trả về hành động
+│   │   ├── HighScore.h / .cpp    #   Điểm cao: đọc file một lần, ghi khi có kỷ lục mới
 │   │   └── Platform.h            #   Tương thích Windows / macOS / Linux
 │   └── ui/                       # HIỂN THỊ: chỉ vẽ, không đổi dữ liệu game
 │       ├── Renderer.h / .cpp     #   Vẽ sân chơi, khung thông tin, khung tạm dừng và thua
-│       └── ColorRenderer.h       #   Màu ANSI, điểm cao, khử giật màn hình
+│       └── ColorRenderer.h / .cpp #  Cửa sổ console: màu ANSI, gom cả khung hình rồi ghi một lần
 ├── tests/
 │   └── test_speed.cpp            # Unit test cho DropSpeedController (6/6)
 ├── dist_web/                     # Bản web chơi trên trình duyệt
