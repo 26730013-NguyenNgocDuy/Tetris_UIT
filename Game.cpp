@@ -1,6 +1,7 @@
 #include "Game.h"
 
 #include "ColorRenderer.h"
+#include "GameState.h"
 #include "Platform.h"
 
 #include <iostream>
@@ -13,10 +14,28 @@ Game::Game()
     canHold = true;
     running = true;
     over = false;
+    pending = 0;
 
     board.reset();
     fillQueue();
     spawn();
+
+    // Ván mới bắt đầu ở trạng thái đang chơi
+    state = new PlayingState(this);
+}
+
+Game::~Game()
+{
+    // Game sở hữu trạng thái nên phải tự dọn. Hàm huỷ của GameState là hàm ảo
+    // nên lệnh delete này gọi đúng hàm huỷ của lớp con.
+    delete state;
+    delete pending;
+}
+
+void Game::setState(GameState *newState)
+{
+    delete pending;        // phòng trường hợp đổi trạng thái hai lần trong một nhịp
+    pending = newState;
 }
 
 void Game::fillQueue()
@@ -93,7 +112,6 @@ void Game::hold()
         return;
 
     canHold = false;
-    board.erase(current);
 
     if (holdType == -1)
     {
@@ -167,12 +185,10 @@ void Game::applyGravity()
 
 void Game::drawPlayfield()
 {
-    // Nhấc khối ra khỏi bàn cờ để tính bóng mờ, xong đặt lại chỗ cũ
-    board.erase(current);
-    int ghost = ghostRow();
-    board.place(current);
-
-    renderer.draw(board, current, ghost, holdType, nextQueue, speed);
+    // Khối đang rơi KHÔNG nằm trong bàn cờ, nó chỉ được vẽ đè lên khi hiển thị.
+    // Nhờ vậy tính bóng mờ không bị khối va vào chính nó, và lúc thua cũng không
+    // xoá nhầm gạch cũ ở chỗ khối mới đè lên.
+    renderer.draw(board, current, ghostRow(), holdType, nextQueue, speed);
 }
 
 void Game::restart()
@@ -190,38 +206,26 @@ void Game::run()
 {
     while (running)
     {
-        board.erase(current);
+        // ĐA HÌNH: ba lệnh dưới đây giống nhau ở mọi trạng thái, nhưng chạy ra
+        // việc khác nhau tuỳ đang chơi, đang tạm dừng hay đã thua
+        state->handle(input.poll());
+        state->update();
 
-        Action action = input.poll();
+        if (running)
+            state->draw();
 
-        switch (action)
+        int nhip = state->tickMs();
+
+        // Hết nhịp mới đổi trạng thái, lúc này không còn ai đang dùng trạng thái cũ
+        if (pending != 0)
         {
-        case ACTION_LEFT:      moveLeft();    break;
-        case ACTION_RIGHT:     moveRight();   break;
-        case ACTION_SOFT_DROP: softDrop();    break;
-        case ACTION_ROTATE:    rotatePiece(); break;
-        case ACTION_HOLD:      hold();        break;
-        case ACTION_HARD_DROP: hardDrop();    break;
-        case ACTION_QUIT:      running = false; break;
-        default: break;
+            delete state;
+            state = pending;
+            pending = 0;
         }
 
-        if (!running)
-            break;
-
-        applyGravity();
-
-        if (over)
-        {
-            drawPlayfield();
-            renderer.showMessage(18, 10, "   GAME OVER!   ", COLOR_RED, COLOR_WHITE);
-            break;
-        }
-
-        board.place(current);
-        drawPlayfield();
-
-        Sleep(speed.getDropInterval());
+        if (running)
+            Sleep(nhip);
     }
 
     ColorRenderer::gotoxy(0, 23);

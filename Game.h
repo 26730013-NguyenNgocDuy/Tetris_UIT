@@ -8,6 +8,8 @@
 #include "Renderer.h"
 #include "Tetromino.h"
 
+class GameState;
+
 /**
  * @brief Lớp điều khiển ván chơi: giữ mọi thứ của game và chạy vòng lặp chính.
  *
@@ -21,8 +23,15 @@ class Game
 {
 public:
     Game();
+    ~Game();
 
     void run();     // vòng lặp chính, chạy tới khi người chơi thoát
+
+    // Đổi trạng thái. Trạng thái cũ chỉ bị xoá ở cuối nhịp, vì hàm gọi lệnh này
+    // thường chính là phương thức của trạng thái cũ, xoá ngay sẽ hỏng.
+    void setState(GameState *newState);
+
+    Renderer &getRenderer() { return renderer; }
 
     // Các thao tác của người chơi
     void moveLeft();
@@ -53,6 +62,9 @@ private:
     int nextQueue[4];      // bốn khối sắp tới
     bool running;          // còn chạy vòng lặp hay không
     bool over;             // đã thua chưa
+
+    GameState *state;      // trạng thái hiện tại, Game sở hữu và tự xoá
+    GameState *pending;    // trạng thái sắp chuyển sang, chờ hết nhịp
 
     // Game sở hữu các thành phần bên trên nên không cho sao chép: sao chép sẽ
     // tạo ra hai ván chơi dùng chung một bàn cờ. Khai báo mà không định nghĩa.
