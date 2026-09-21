@@ -96,7 +96,7 @@ Chỗ gọi chỉ cầm con trỏ `Blocks *current` và gọi `current->rotate()
 
 ## 🚀 Cài đặt và chơi ngay
 
-> 🍎 **macOS / Linux**: chạy `./play.sh` (hoặc `g++ -std=c++11 -Isrc/core -Isrc/game -Isrc/ui src/*.cpp src/core/*.cpp src/game/*.cpp src/ui/*.cpp -o tetris && ./tetris`). `Platform.h` tự thay `<windows.h>`/`<conio.h>` bằng termios và mã màu ANSI.
+> 🍎 **macOS / Linux**: chạy `bash play.sh` (hoặc `g++ -std=c++11 -Isrc/core -Isrc/game -Isrc/ui src/*.cpp src/core/*.cpp src/game/*.cpp src/ui/*.cpp -o tetris && ./tetris`). `Platform.h` tự thay `<windows.h>`/`<conio.h>` bằng termios và mã màu ANSI.
 
 **1. Tải source về**
 
