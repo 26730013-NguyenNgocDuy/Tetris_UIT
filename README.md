@@ -63,7 +63,7 @@ Mỗi hàng phá được làm gạch rơi nhanh thêm **30 ms**. Phá 4 hàng m
 | :--: | --------- |
 | `A` | ⬅️ Sang trái |
 | `D` | ➡️ Sang phải |
-| `X` | ⬇️ Đẩy khối xuống nhanh hơn |
+| `SPACE` | ⬇️ Đẩy khối xuống nhanh hơn |
 | `Q` | 🚪 Thoát game |
 
 ### Xoay khối bằng tính đa hình
